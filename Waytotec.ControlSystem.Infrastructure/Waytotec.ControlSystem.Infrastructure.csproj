@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Waytotec.ControlSystem.Core\Waytotec.ControlSystem.Core.csproj" />
+  </ItemGroup>
+
 </Project>
