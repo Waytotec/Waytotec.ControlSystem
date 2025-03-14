@@ -6,6 +6,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+	  <!-- 단일 파일 빌드 설정 시작-->
+	  <!--<PublishSingleFile>true</PublishSingleFile>
+	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	  <SelfContained>true</SelfContained>
+	  <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+	  <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>-->
+	  <!-- 단일 파일 빌드 설정 끝-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,7 +20,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Waytotec.ControlSystem.IoC\Waytotec.ControlSystem.IoC.csproj" />
+    <ProjectReference Include="..\Waytotec.ControlSystem.Core\Waytotec.ControlSystem.Core.csproj">
+      <ReferenceOutputAssembly></ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\Waytotec.ControlSystem.Infrastructure\Waytotec.ControlSystem.Infrastructure.csproj">
+      <ReferenceOutputAssembly></ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\Waytotec.ControlSystem.IoC\Waytotec.ControlSystem.IoC.csproj">
+      <ReferenceOutputAssembly></ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>
