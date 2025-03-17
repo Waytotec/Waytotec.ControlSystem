@@ -7,27 +7,43 @@
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterScreen"
-        Width="600" Height="300">    
+        Width="600" Height="300">
+    <Window.Resources>
+        <!-- 그림자 효과 -->
+        <DropShadowEffect x:Key="GlowShadow" BlurRadius="10" ShadowDepth="0" Color="White" Opacity="1" />
+    </Window.Resources>
     <Grid>
         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock x:Name="Part1" Text="Way" Style="{StaticResource WaytotecTextStyle}" Opacity="0">
-                    <TextBlock.RenderTransform>
-                        <TranslateTransform X="-100"/>
-                    </TextBlock.RenderTransform>
-                </TextBlock>
-                <TextBlock x:Name="Part2" Text="to" Style="{StaticResource WaytotecTextStyle}" Opacity="0">
+                <Grid>
+                    <TextBlock x:Name="Part1" Text="Way" 
+                               Style="{StaticResource WttTextStyle1}" Opacity="0"
+                               Effect="{StaticResource GlowShadow}">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-100"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                </Grid>
+                <TextBlock x:Name="Part2" Text="to" 
+                           Style="{StaticResource WttTextStyle1}" Opacity="0"                           
+                           Effect="{StaticResource GlowShadow}">
                     <TextBlock.RenderTransform>
                         <TranslateTransform X="-50"/>
                     </TextBlock.RenderTransform>
-                </TextBlock>
-                <TextBlock x:Name="Part3" Text="tec" Style="{StaticResource WaytotecTextStyle}" Opacity="0">
+                </TextBlock>                
+                <TextBlock x:Name="Part3" Text="tec" 
+                           Style="{StaticResource WttTextStyle1}" Opacity="0"                           
+                           Effect="{StaticResource GlowShadow}">
                     <TextBlock.RenderTransform>
                         <TranslateTransform X="0"/>
                     </TextBlock.RenderTransform>
-                </TextBlock>
+                </TextBlock>                
             </StackPanel>
-            <ProgressBar IsIndeterminate="True" Height="10"  Margin="0, 10, 0, 0" Foreground="#2630F2" />
+            <ProgressBar IsIndeterminate="True" Height="11"  
+                         Margin="0, 10, 0, 0" Foreground="#2630F2" 
+                         Effect="{StaticResource GlowShadow}"
+                         BorderBrush="White"
+                         BorderThickness="2" />
         </StackPanel>
     </Grid>
     <Window.Triggers>
@@ -35,12 +51,13 @@
             <BeginStoryboard>
                 <Storyboard>
                     <DoubleAnimation Storyboard.TargetName="Part3" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.4" BeginTime="0:0:0" />
+                    <DoubleAnimation Storyboard.TargetName="Part3" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)" To="0" Duration="0:0:0.4" BeginTime="0:0:0.5" />
                     
                     <DoubleAnimation Storyboard.TargetName="Part2" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.4" BeginTime="0:0:0.5" />
-                    <DoubleAnimation Storyboard.TargetName="Part2" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)" To="0" Duration="0:0:0.3" BeginTime="0:0:0.5" />
+                    <DoubleAnimation Storyboard.TargetName="Part2" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)" To="0" Duration="0:0:0.4" BeginTime="0:0:0.5" />
 
                     <DoubleAnimation Storyboard.TargetName="Part1" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.4" BeginTime="0:0:1" />
-                    <DoubleAnimation Storyboard.TargetName="Part1" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)" To="0" Duration="0:0:0.3" BeginTime="0:0:1" />
+                    <DoubleAnimation Storyboard.TargetName="Part1" Storyboard.TargetProperty="RenderTransform.(TranslateTransform.X)" To="0" Duration="0:0:0.4" BeginTime="0:0:1" />
                 </Storyboard>
             </BeginStoryboard>
         </EventTrigger>

@@ -2,9 +2,15 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:conv="clr-namespace:Waytotec.ControlSystem.App.Converters">
 
-    <Style x:Key="WaytotecTextStyle" TargetType="TextBlock">
+    <Style x:Key="WttTextStyle1" TargetType="TextBlock">
         <Setter Property="Foreground" Value="#2630F2"/>
         <Setter Property="FontSize" Value="120"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontFamily" Value="Times New Roman"/>
+    </Style>
+    <Style x:Key="WttTextStyle2" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontSize" Value="150"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="FontFamily" Value="Times New Roman"/>
     </Style>
