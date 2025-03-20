@@ -1,0 +1,22 @@
+<Window x:Class="Waytotec.ControlSystem.App.Views.DeviceDetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="장비 상세 보기" Height="300" Width="400"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="장비 상세 정보" FontWeight="Bold" FontSize="16" Margin="0,0,0,10" />
+
+        <StackPanel Grid.Row="1" Margin="0,10,0,0">
+            <TextBlock Text="{Binding DeviceId}" />
+            <TextBlock Text="{Binding IP}" />
+            <TextBlock Text="{Binding MacAddress}" />
+            <TextBlock Text="{Binding StatusMessage}" />
+            <TextBlock Text="{Binding LastUpdated}" />
+        </StackPanel>
+    </Grid>
+</Window>

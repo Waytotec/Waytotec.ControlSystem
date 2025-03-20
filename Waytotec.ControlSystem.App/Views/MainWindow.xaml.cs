@@ -1,14 +1,25 @@
-﻿using System.Windows;
+﻿using System.Windows.Input;
+using Waytotec.ControlSystem.App.ViewModels;
 
-namespace Waytotec.ControlSystem.App.Views;
-
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
-public partial class MainWindow : Window
+namespace Waytotec.ControlSystem.App.Views
 {
-    public MainWindow()
+    public partial class MainWindow : Window
     {
-        InitializeComponent();
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+        private void DeviceGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (DataContext is MainViewModel vm && vm.SelectedDevice != null)
+            {
+                var detailWindow = new DeviceDetailWindow(vm.SelectedDevice);
+                detailWindow.Owner = this;
+                detailWindow.ShowDialog();
+            }
+        }
+
     }
 }
+

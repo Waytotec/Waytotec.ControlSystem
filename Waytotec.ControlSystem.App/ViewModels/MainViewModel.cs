@@ -6,6 +6,20 @@ namespace Waytotec.ControlSystem.App.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
+        private DeviceStatus _selectedDevice;
+        public DeviceStatus SelectedDevice
+        {
+            get => _selectedDevice;
+            set
+            {
+                if (_selectedDevice != value)
+                {
+                    _selectedDevice = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public ObservableCollection<DeviceStatus> Devices { get; } = new();
         private readonly IDeviceService _deviceService;
 

@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Waytotec.ControlSystem.Core.Models;
+using System.Net;
 using Waytotec.ControlSystem.Core.Interfaces;
+using Waytotec.ControlSystem.Core.Models;
 
 namespace Waytotec.ControlSystem.Infrastructure.Services
 {
@@ -11,8 +8,28 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
     {
         private List<DeviceStatus> _devices = new()
         {
-            new DeviceStatus { DeviceId = "CAM001", Type = DeviceType.Camera, IsOnline = true, StatusMessage = "녹화 중", LastUpdated = DateTime.Now },
-            new DeviceStatus { DeviceId = "BELL001", Type = DeviceType.EmergencyBell, IsOnline = false, StatusMessage = "오프라인", LastUpdated = DateTime.Now },
+            new DeviceStatus
+            {
+                DeviceId = "CAM001",
+                Type = DeviceType.Camera,
+                IsOnline = true,
+                StatusMessage = "녹화 중",
+                LastUpdated = DateTime.Now,
+                IP = IPAddress.Parse("192.168.0.10"),
+                MacAddress = new MacAddress("00-1A-2B-3C-4D-5E"),
+                Version = "v1.0.0"
+            },
+            new DeviceStatus
+            {
+                DeviceId = "BELL001",
+                Type = DeviceType.EmergencyBell,
+                IsOnline = false,
+                StatusMessage = "오프라인",
+                LastUpdated = DateTime.Now,
+                IP = IPAddress.Parse("192.168.0.11"),
+                MacAddress = new MacAddress("00-1A-2B-3C-4D-5F"),
+                Version = "v1.2.3"
+            },
         };
 
         public Task<IEnumerable<DeviceStatus>> GetAllStatusesAsync()

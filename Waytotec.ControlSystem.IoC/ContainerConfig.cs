@@ -4,7 +4,7 @@ namespace Waytotec.ControlSystem.IoC
 {
     public static class ContainerConfig
     {
-        public static ServiceProvider Configure(Action<IServiceCollection> extend = null)
+        public static ServiceProvider Configure(Action<IServiceCollection>? extend = null)
         {
             var services = new ServiceCollection();
 
