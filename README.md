@@ -62,6 +62,33 @@ Visual Studio에서 `Waytotec.ControlSystem.sln` 열기
 
 ---
 
+## 📝 요구 사항 정리
+
+|![1 CamFree](https://github.com/user-attachments/assets/b5bce43e-6e01-4759-86f6-9be38dff2834)|![LprUtil](https://github.com/user-attachments/assets/fe6ef6d2-c0a9-4735-8f7a-8c893c0d5d25)|
+|---|---|
+
+### 1. 분석 및 설계
+```text
+ - 각 프로그램(DCS, LCS) 전체 기능 실행 후 기능 분석 및 코드 분석 기간 필요
+ - 전체 Device 모델별 타입 분류 (카메라, 비상벨, 인터폰...)
+ - 전체 Device 모델별 기능 실행 및 테스트
+ - 단계별 기능 소스 코드 구현
+ - 단계별 화면 디자인 (UI/UX)
+ - 프로그램 배포 프로젝트 생성
+```
+
+### 2. 협의사항
+```text
+ - DB서버 또는 File서버 필요한가? (프로그램 업데이트, 히스토리 기록)
+   - 폐쇄망 현장은 이력 관리 불편...
+ - Client 실행 환경은 오로지 Windows OS 뿐인가? (향후 Mobile 또는 Pad, Web 지원 여부)
+ - 실행했던 기능 History 관리 기능 
+ - 현장별 폴더 관리 기능 필요?
+ - 폐쇄망 주차 서버 PC를 이용한 로컬 챗봇 기능 필요?
+```
+
+---
+
 ## 📦 향후 기능 확장
 
 - 디바이스 실시간 상태 갱신
