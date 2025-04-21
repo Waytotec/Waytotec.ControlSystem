@@ -15,7 +15,7 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
                 IsOnline = true,
                 StatusMessage = "녹화 중",
                 LastUpdated = DateTime.Now,
-                IP = IPAddress.Parse("192.168.0.10"),
+                IP = IPAddress.Parse("192.168.1.120"),
                 MacAddress = new MacAddress("00-1A-2B-3C-4D-5E"),
                 Version = "v1.0.0"
             },
@@ -26,7 +26,7 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
                 IsOnline = false,
                 StatusMessage = "오프라인",
                 LastUpdated = DateTime.Now,
-                IP = IPAddress.Parse("192.168.0.11"),
+                IP = IPAddress.Parse("192.168.1.121"),
                 MacAddress = new MacAddress("00-1A-2B-3C-4D-5F"),
                 Version = "v1.2.3"
             },
