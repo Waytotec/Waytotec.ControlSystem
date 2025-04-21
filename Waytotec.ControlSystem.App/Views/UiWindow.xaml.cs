@@ -8,24 +8,38 @@ namespace Waytotec.ControlSystem.App.Views
 {
     public partial class UiWindow : INavigationWindow
     {
+        private readonly SettingsService _settingsService;
         public UiWindowViewModel ViewModel { get; }
 
         public UiWindow(
             UiWindowViewModel viewModel,
             INavigationViewPageProvider navigationViewPageProvider,
-            INavigationService navigationService
+            INavigationService navigationService,
+            SettingsService settingsService
             )
         {
             ViewModel = viewModel;
+            _settingsService = settingsService;
             DataContext = this;
-            SystemThemeWatcher.Watch(this);
 
             InitializeComponent();
+            InitTheme();
 
             SetPageService(navigationViewPageProvider);
             navigationService.SetNavigationControl(RootNavigation);
         }
 
+
+        private void InitTheme()
+        {
+            SystemThemeWatcher.Watch(this);
+
+            var theme = _settingsService.Settings.Theme == "Light"
+                ? Wpf.Ui.Appearance.ApplicationTheme.Light
+                : Wpf.Ui.Appearance.ApplicationTheme.Dark;
+
+            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(theme);
+        }
 
         #region INavigationWindow methods
 

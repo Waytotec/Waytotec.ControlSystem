@@ -43,13 +43,6 @@ namespace Waytotec.ControlSystem.App.Services
         /// </summary>
         private async Task HandleActivationAsync()
         {
-            // ✅ 테마 적용 시점 이곳이 가장 안전함
-            var theme = _settingsService.Settings.Theme == "Light"
-                ? Wpf.Ui.Appearance.ApplicationTheme.Light
-                : Wpf.Ui.Appearance.ApplicationTheme.Dark;
-
-            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(theme);
-
             if (!Application.Current.Windows.OfType<UiWindow>().Any())
             {
                 _navigationWindow = (
