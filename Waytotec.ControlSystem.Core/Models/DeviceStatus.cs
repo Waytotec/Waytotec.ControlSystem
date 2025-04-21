@@ -12,6 +12,9 @@ namespace Waytotec.ControlSystem.Core.Models
 
         public IPAddress? IP { get; set; }
         public MacAddress? MacAddress { get; set; }
+        public string IPString => IP?.ToString() ?? string.Empty;
+        public string MacAddressString => MacAddress?.ToString() ?? string.Empty;
+
         public string? Version { get; set; }
     }
 }

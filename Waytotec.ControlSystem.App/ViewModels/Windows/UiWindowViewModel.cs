@@ -6,7 +6,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Windows
     public partial class UiWindowViewModel : ObservableObject
     {
         [ObservableProperty]
-        private string _applicationTitle = "WPF UI - UiDesktopApp1";
+        private string _applicationTitle = "WTT Device Control System";
 
         [ObservableProperty]
         private ObservableCollection<object> _menuItems = new()
@@ -28,6 +28,12 @@ namespace Waytotec.ControlSystem.App.ViewModels.Windows
         [ObservableProperty]
         private ObservableCollection<object> _footerMenuItems = new()
         {
+            new NavigationViewItem()
+            {
+                Content = "Manual",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Document24},
+                TargetPageType = typeof(Views.Pages.ManualPage)
+            },
             new NavigationViewItem()
             {
                 Content = "Settings",

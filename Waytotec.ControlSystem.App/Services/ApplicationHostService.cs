@@ -10,12 +10,14 @@ namespace Waytotec.ControlSystem.App.Services
     public class ApplicationHostService : IHostedService
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly SettingsService _settingsService;
 
         private INavigationWindow _navigationWindow;
 
-        public ApplicationHostService(IServiceProvider serviceProvider)
+        public ApplicationHostService(IServiceProvider serviceProvider, SettingsService settingsService)
         {
             _serviceProvider = serviceProvider;
+            _settingsService = settingsService;
         }
 
         /// <summary>
@@ -41,6 +43,13 @@ namespace Waytotec.ControlSystem.App.Services
         /// </summary>
         private async Task HandleActivationAsync()
         {
+            // ✅ 테마 적용 시점 이곳이 가장 안전함
+            var theme = _settingsService.Settings.Theme == "Light"
+                ? Wpf.Ui.Appearance.ApplicationTheme.Light
+                : Wpf.Ui.Appearance.ApplicationTheme.Dark;
+
+            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(theme);
+
             if (!Application.Current.Windows.OfType<UiWindow>().Any())
             {
                 _navigationWindow = (

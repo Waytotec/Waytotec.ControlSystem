@@ -6,12 +6,18 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
     public partial class SettingsViewModel : ObservableObject, INavigationAware
     {
         private bool _isInitialized = false;
+        private readonly SettingsService _settingsService;
 
         [ObservableProperty]
         private string _appVersion = String.Empty;
 
         [ObservableProperty]
         private ApplicationTheme _currentTheme = ApplicationTheme.Unknown;
+
+        public SettingsViewModel(SettingsService settingsService)
+        {
+            _settingsService = settingsService;
+        }
 
         public Task OnNavigatedToAsync()
         {
@@ -25,8 +31,11 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
 
         private void InitializeViewModel()
         {
-            CurrentTheme = ApplicationThemeManager.GetAppTheme();
-            AppVersion = $"UiDesktopApp1 - {GetAssemblyVersion()}";
+            var theme = _settingsService.Settings.Theme == "Light" ? ApplicationTheme.Light : ApplicationTheme.Dark;
+            ApplicationThemeManager.Apply(theme);
+
+            CurrentTheme = theme;
+            AppVersion = $"Device Control System - {GetAssemblyVersion()}";
 
             _isInitialized = true;
         }
@@ -40,26 +49,20 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         [RelayCommand]
         private void OnChangeTheme(string parameter)
         {
-            switch (parameter)
+            if (parameter == "theme_light")
             {
-                case "theme_light":
-                    if (CurrentTheme == ApplicationTheme.Light)
-                        break;
-
-                    ApplicationThemeManager.Apply(ApplicationTheme.Light);
-                    CurrentTheme = ApplicationTheme.Light;
-
-                    break;
-
-                default:
-                    if (CurrentTheme == ApplicationTheme.Dark)
-                        break;
-
-                    ApplicationThemeManager.Apply(ApplicationTheme.Dark);
-                    CurrentTheme = ApplicationTheme.Dark;
-
-                    break;
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
+                CurrentTheme = Wpf.Ui.Appearance.ApplicationTheme.Light;
+                _settingsService.Settings.Theme = "Light";
             }
+            else
+            {
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
+                CurrentTheme = Wpf.Ui.Appearance.ApplicationTheme.Dark;
+                _settingsService.Settings.Theme = "Dark";
+            }
+
+            _settingsService.Save();
         }
     }
 }
