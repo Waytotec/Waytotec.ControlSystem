@@ -16,6 +16,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\NoCamera.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
@@ -36,6 +40,19 @@
     <ProjectReference Include="..\Waytotec.ControlSystem.IoC\Waytotec.ControlSystem.IoC.csproj">
       <ReferenceOutputAssembly></ReferenceOutputAssembly>
     </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\NoCamera.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\Controls\RtspVideoViewer_Backup.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Controls\RtspVideoViewer.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>

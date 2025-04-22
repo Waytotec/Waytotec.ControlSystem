@@ -9,7 +9,7 @@
     Height="Auto"
     mc:Ignorable="d">
     <Grid>
-        <Image x:Name="VideoImage" Stretch="Uniform" />
+        <Image x:Name="VideoImage" Stretch="Uniform" Source="/Resources/NoCamera.png" />
         <StackPanel
             Margin="10"
             HorizontalAlignment="Left"
