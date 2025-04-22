@@ -116,7 +116,7 @@ namespace Waytotec.ControlSystem.App.Views.Controls
         public void Stop()
         {
             _isStreaming = false;
-            _capture.Release();
+            _capture?.Release();
             _capture?.Dispose();
             _capture = null;
         }
