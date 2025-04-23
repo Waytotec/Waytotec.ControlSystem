@@ -38,5 +38,16 @@ namespace Waytotec.ControlSystem.App.Views.Pages
             //    detailWindow.ShowDialog();
             //}
         }
+
+        private void RtspViewer_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // RtspVideoViewer me = sender as RtspVideoViewer;
+
+            string ip = "192.168.1.120"; // 현재 재생 중인 IP를 여기서 가져오세요
+            string stream = "stream0";   // 현재 stream 값도 같이 넘겨야 합니다
+
+            var popup = new RtspPopupWindow(ip, stream);
+            popup.Show();
+        }
     }
 }

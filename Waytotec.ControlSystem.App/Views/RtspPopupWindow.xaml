@@ -1,0 +1,15 @@
+﻿<Window x:Class="Waytotec.ControlSystem.App.Views.RtspPopupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Waytotec.ControlSystem.App.Views"
+        xmlns:controls="clr-namespace:Waytotec.ControlSystem.App.Views.Controls"
+        Title="RtspPopupWindow"
+        Width="800"
+        Height="450"
+        mc:Ignorable="d">
+    <Grid>
+        <controls:RtspVideoViewer x:Name="RtspViewer" />
+    </Grid>
+</Window>

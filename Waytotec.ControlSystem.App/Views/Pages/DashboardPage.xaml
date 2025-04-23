@@ -58,7 +58,7 @@
                 Margin="10"
                 Background="Black"
                 CornerRadius="4">
-            <controls:RtspVideoViewer x:Name="RtspViewer" />
+            <controls:RtspVideoViewer x:Name="RtspViewer"  MouseDoubleClick="RtspViewer_MouseDoubleClick"/>
         </Border>
 
         <!--  제어 버튼  -->
