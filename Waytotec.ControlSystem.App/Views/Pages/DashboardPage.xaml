@@ -69,7 +69,8 @@
             <WrapPanel Margin="0,0,0,10">
                 <Button Width="120"
                         Margin="5"
-                        Content="Ping 테스트" />
+                        Content="Ping 테스트"
+                        Command="{Binding PingTestCommand}" />
                 <Button Width="120"
                         Margin="5"
                         Content="공장초기화" />
