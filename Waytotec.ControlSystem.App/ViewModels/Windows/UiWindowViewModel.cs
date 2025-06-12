@@ -17,6 +17,12 @@ namespace Waytotec.ControlSystem.App.ViewModels.Windows
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
                 TargetPageType = typeof(Views.Pages.DashboardPage)
             },
+            new NavigationViewItem()
+            {
+                Content = "Manual",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Document24},
+                TargetPageType = typeof(Views.Pages.ManualPage)
+            },
             //new NavigationViewItem()
             //{
             //    Content = "Data",
@@ -28,12 +34,6 @@ namespace Waytotec.ControlSystem.App.ViewModels.Windows
         [ObservableProperty]
         private ObservableCollection<object> _footerMenuItems = new()
         {
-            new NavigationViewItem()
-            {
-                Content = "Manual",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.Document24},
-                TargetPageType = typeof(Views.Pages.ManualPage)
-            },
             new NavigationViewItem()
             {
                 Content = "Settings",

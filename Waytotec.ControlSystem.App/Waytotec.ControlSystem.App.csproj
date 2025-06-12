@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\JBOp.ico</ApplicationIcon>
 	  <!-- 단일 파일 빌드 설정 시작-->
 	  <!--<PublishSingleFile>true</PublishSingleFile>
 	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -16,7 +17,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\wpfui-icon-1024.png" />
+    <None Remove="Assets\wpfui-icon-256.png" />
     <None Remove="Resources\NoCamera.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\JBOp.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
   <ItemGroup>
@@ -43,7 +52,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\NoCamera.png" />
+    <Resource Include="Assets\wpfui-icon-1024.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\wpfui-icon-256.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <EmbeddedResource Include="Resources\NoCamera.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -57,9 +74,6 @@
 
   <ItemGroup>
     <None Update="Assets\Scripts\Ping_Shell.ps1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\wpfui-icon-256.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
