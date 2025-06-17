@@ -21,6 +21,28 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
             },
             new DeviceStatus
             {
+                DeviceId = "CAM002",
+                Type = DeviceType.Camera,
+                IsOnline = true,
+                StatusMessage = "접속 중",
+                LastUpdated = DateTime.Now,
+                IP = IPAddress.Parse("192.168.1.122"),
+                MacAddress = new MacAddress("02-3A-1B-2C-3D-0E"),
+                Version = "v2.1.3"
+            },
+            new DeviceStatus
+            {
+                DeviceId = "CAM003",
+                Type = DeviceType.Camera,
+                IsOnline = false,
+                StatusMessage = "연결 끊김",
+                LastUpdated = DateTime.Now,
+                IP = IPAddress.Parse("192.168.1.123"),
+                MacAddress = new MacAddress("01-2A-3B-5C-2D-1E"),
+                Version = "v3.0.1"
+            },
+            new DeviceStatus
+            {
                 DeviceId = "BELL001",
                 Type = DeviceType.EmergencyBell,
                 IsOnline = false,
