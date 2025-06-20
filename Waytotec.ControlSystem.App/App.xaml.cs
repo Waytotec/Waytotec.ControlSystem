@@ -47,6 +47,7 @@ public partial class App : Application
             services.AddSingleton<ManualPage>();
             services.AddSingleton<ManualViewModel>();
             services.AddSingleton<IDeviceService, MockDeviceService>();
+            services.AddSingleton<ICameraService, CameraService>();
 
             // SettingsService 등록
             var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Waytotec");

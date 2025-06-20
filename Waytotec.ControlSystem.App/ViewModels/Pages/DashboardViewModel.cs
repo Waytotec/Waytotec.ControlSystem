@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Waytotec.ControlSystem.Core.Interfaces;
 using Waytotec.ControlSystem.Core.Models;
+using Waytotec.ControlSystem.Infrastructure.Services;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace Waytotec.ControlSystem.App.ViewModels.Pages
@@ -22,13 +23,33 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
 
         public ObservableCollection<DeviceStatus> Devices { get; } = new();
         private readonly IDeviceService _deviceService;
+        private readonly ICameraService _cameraService;
+
+
+        public ObservableCollection<CameraInfo> Cameras { get; } = new();
+        public IAsyncRelayCommand ScanCommand { get; }
 
 
         private string _title = "Waytotec Device Control System";
 
-        public DashboardViewModel(IDeviceService deviceService)
+        public DashboardViewModel(IDeviceService deviceService, ICameraService cameraService)
         {
             _deviceService = deviceService;
+            _cameraService = cameraService;
+
+            ScanCommand = new AsyncRelayCommand(ScanAsync);
+        }
+
+
+        private async Task ScanAsync()
+        {
+            Cameras.Clear();
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await foreach (var cam in _cameraService.FindCamerasAsync(cts.Token))
+            {
+                if (!Cameras.Any(c => c.Ip == cam.Ip))
+                    Cameras.Add(cam);
+            }
         }
 
         public async Task LoadDevicesAsync()
@@ -36,7 +57,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             if (_isInitialized)
                 return;
 
-            await Task.Delay(5000); // 실제 장비 상태 가져오는 시뮬레이션
+            // await Task.Delay(5000); // 실제 장비 상태 가져오는 시뮬레이션
 
             var statuses = await _deviceService.GetAllStatusesAsync();
             Devices.Clear();
