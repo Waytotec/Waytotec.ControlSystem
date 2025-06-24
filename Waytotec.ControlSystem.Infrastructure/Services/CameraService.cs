@@ -5,17 +5,19 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Channels;
+using Waytotec.ControlSystem.Core.Interfaces;
 using Waytotec.ControlSystem.Core.Models;
 
 namespace Waytotec.ControlSystem.Infrastructure.Services
 {
-    public interface ICameraService
+    public class CameraService : ICameraService, ICameraDiscoveryService
     {
-        IAsyncEnumerable<CameraInfo> FindCamerasAsync(CancellationToken token);
-    }
+        private readonly CameraDiscoveryService _discoveryService;
+        public CameraService()
+        {
+            _discoveryService = new CameraDiscoveryService();
+        }
 
-    public class CameraService : ICameraService
-    {
         public async IAsyncEnumerable<CameraInfo> FindCamerasAsync([EnumeratorCancellation] CancellationToken token)
         {
             var channel = Channel.CreateUnbounded<CameraInfo>();
@@ -189,7 +191,6 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
         private string CalculateChecksum(string dataToCalculate)
         {
             byte[] byteToCalculate = Encoding.ASCII.GetBytes(dataToCalculate);
-
             int checksum = 0;
 
             foreach (byte chData in byteToCalculate)
@@ -198,8 +199,58 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
             }
 
             checksum &= 0xff;
-
             return checksum.ToString("X2");
+        }
+
+        // ICameraDiscoveryService 구현 (새로운 기능)
+        public bool IsDiscovering => _discoveryService.IsDiscovering;
+
+        public event EventHandler<CameraDiscoveredEventArgs>? CameraDiscovered
+        {
+            add => _discoveryService.CameraDiscovered += value;
+            remove => _discoveryService.CameraDiscovered -= value;
+        }
+
+        public event EventHandler<DiscoveryProgressEventArgs>? DiscoveryProgress
+        {
+            add => _discoveryService.DiscoveryProgress += value;
+            remove => _discoveryService.DiscoveryProgress -= value;
+        }
+
+        public event EventHandler<EventArgs>? DiscoveryCompleted
+        {
+            add => _discoveryService.DiscoveryCompleted += value;
+            remove => _discoveryService.DiscoveryCompleted -= value;
+        }
+
+        public async Task<IEnumerable<DiscoveredCamera>> DiscoverCamerasAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            return await _discoveryService.DiscoverCamerasAsync(timeout, cancellationToken);
+        }
+
+        public async Task StartContinuousDiscoveryAsync(CancellationToken cancellationToken = default)
+        {
+            await _discoveryService.StartContinuousDiscoveryAsync(cancellationToken);
+        }
+
+        public async Task StopDiscoveryAsync()
+        {
+            await _discoveryService.StopDiscoveryAsync();
+        }
+
+        public async Task<IEnumerable<DiscoveredCamera>> DiscoverCamerasInRangeAsync(IPAddress startIp, IPAddress endIp, CancellationToken cancellationToken = default)
+        {
+            return await _discoveryService.DiscoverCamerasInRangeAsync(startIp, endIp, cancellationToken);
+        }
+
+        public async Task<DiscoveredCamera?> VerifyCameraAsync(IPAddress ipAddress, CancellationToken cancellationToken = default)
+        {
+            return await _discoveryService.VerifyCameraAsync(ipAddress, cancellationToken);
+        }
+
+        public void Dispose()
+        {
+            _discoveryService?.Dispose();
         }
     }
 }

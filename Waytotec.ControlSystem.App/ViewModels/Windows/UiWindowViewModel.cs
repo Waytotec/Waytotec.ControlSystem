@@ -19,6 +19,12 @@ namespace Waytotec.ControlSystem.App.ViewModels.Windows
             },
             new NavigationViewItem()
             {
+                Content = "카메라 검색",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Camera24 },
+                TargetPageType = typeof(Views.Pages.CameraDiscoveryPage)
+            },
+            new NavigationViewItem()
+            {
                 Content = "Manual",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Document24},
                 TargetPageType = typeof(Views.Pages.ManualPage)

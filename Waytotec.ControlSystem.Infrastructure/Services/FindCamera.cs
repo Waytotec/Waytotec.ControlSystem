@@ -83,22 +83,22 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
 
         public FindCamera()
         {
-            //try
-            //{
-            //    udp = new UdpClient();
-            //    IPEndPoint localEp = new IPEndPoint(IPAddress.Any, PORT_NUMBER);
-            //    udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            //    udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
-            //    udp.ExclusiveAddressUse = false;
-            //    udp.Client.Bind(localEp);
+            try
+            {
+                udp = new UdpClient();
+                IPEndPoint localEp = new IPEndPoint(IPAddress.Any, PORT_NUMBER);
+                udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
+                udp.ExclusiveAddressUse = false;
+                udp.Client.Bind(localEp);
 
-            //    //  send_command();
+                //  send_command();
 
-            //    StartListening();
-            //}
-            //catch (Exception)
-            //{
-            //}
+                StartListening();
+            }
+            catch (Exception)
+            {
+            }
         }
 
         public void StartBind()
