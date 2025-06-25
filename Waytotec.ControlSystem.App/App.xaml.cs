@@ -88,11 +88,9 @@ public partial class App : Application
         var dashboard = Services.GetService<DashboardViewModel>();
         await dashboard!.LoadDevicesAsync();
 
-
         splash.Close();
 
         await _host.StartAsync();
-        // 다시 ShutdownMode를 기본으로
         Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
     }
 
@@ -106,9 +104,75 @@ public partial class App : Application
     /// </summary>
     private async void OnExit(object sender, ExitEventArgs e)
     {
-        await _host.StopAsync();
+        try
+        {
+            // 1. 모든 윈도우의 컨트롤들 정리
+            await CleanupAllWindowsAsync();
 
-        _host.Dispose();
+            // 2. ViewModel 정리
+            await CleanupViewModelsAsync();
+
+            // 3. 호스트 중지 (타임아웃 적용)
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            await _host.StopAsync(cts.Token);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"종료 중 오류: {ex.Message}");
+        }
+        finally
+        {
+            _host.Dispose();
+        }
+    }
+
+    private async Task CleanupAllWindowsAsync()
+    {
+        try
+        {
+            foreach (Window window in Windows)
+            {
+                if (window is UiWindow uiWindow)
+                {
+                    // 각 페이지의 RtspVideoViewer 정리
+                    var dashboardPage = Services.GetService<DashboardPage>();
+                    if (dashboardPage?.RtspViewer != null)
+                    {
+                        await dashboardPage.RtspViewer.StopAsync();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"윈도우 정리 중 오류: {ex.Message}");
+        }
+    }
+
+    private async Task CleanupViewModelsAsync()
+    {
+        try
+        {
+            // CameraDiscoveryViewModel 정리
+            var cameraDiscoveryVM = Services.GetService<CameraDiscoveryViewModel>();
+            if (cameraDiscoveryVM != null)
+            {
+                await cameraDiscoveryVM.OnNavigatedFromAsync();
+                cameraDiscoveryVM = null;
+            }
+
+            // DashboardViewModel 정리
+            var dashboardVM = Services.GetService<DashboardViewModel>();
+            if (dashboardVM != null)
+            {
+                await dashboardVM.OnNavigatedFromAsync();
+                dashboardVM = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"ViewModel 정리 중 오류: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -116,7 +180,14 @@ public partial class App : Application
     /// </summary>
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        // For more info see https://docs.microsoft.com/en-us/dotnet/api/system.windows.application.dispatcherunhandledexception?view=windowsdesktop-6.0
+        System.Diagnostics.Debug.WriteLine($"처리되지 않은 예외: {e.Exception}");
+        e.Handled = true;
+
+        MessageBox.Show(
+            $"예상치 못한 오류가 발생했습니다.\n\n{e.Exception.Message}",
+            "애플리케이션 오류",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
     }
 }
 

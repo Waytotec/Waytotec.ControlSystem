@@ -13,7 +13,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         public CameraDiscoveryPage(CameraDiscoveryViewModel viewModel)
         {
             ViewModel = viewModel;
-            DataContext = this;
+            DataContext = ViewModel;
 
             InitializeComponent();
         }

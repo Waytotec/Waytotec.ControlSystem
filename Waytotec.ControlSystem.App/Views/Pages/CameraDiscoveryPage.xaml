@@ -176,9 +176,9 @@
                         Text="{Binding NetworkRange}" />
                     <TextBlock VerticalAlignment="Center" Text="/" />
                     <ui:NumberBox
-                        Width="60"
+                        Width="150"
                         Margin="5,0,0,0"
-                        Maximum="30"
+                        Maximum="255"
                         Minimum="8"
                         Value="{Binding NetworkMask}" />
                 </StackPanel>
@@ -193,12 +193,11 @@
             Visibility="{Binding ShowProgress, Converter={StaticResource BooleanToVisibilityConverter}}"
             Value="{Binding ScanProgress}" />-->
         <ui:ProgressRing
-    Grid.Row="2"
-    Height="4"
-    Margin="0,0,0,10"
-    Visibility="{Binding ShowProgress, Converter={StaticResource BooleanToVisibilityConverter}}"
-    />
-        
+            Grid.Row="2"
+            Height="4"
+            Margin="0,0,0,10"
+            Visibility="{Binding ShowProgress, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
         <!--  카메라 목록  -->
         <DataGrid
             Name="CameraDataGrid"

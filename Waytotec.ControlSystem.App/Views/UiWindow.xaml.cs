@@ -63,7 +63,7 @@ namespace Waytotec.ControlSystem.App.Views
             base.OnClosed(e);
 
             // Make sure that closing this window will begin the process of closing the application.
-            Application.Current.Shutdown();
+            // Application.Current.Shutdown();
         }
 
         INavigationView INavigationWindow.GetNavigation()

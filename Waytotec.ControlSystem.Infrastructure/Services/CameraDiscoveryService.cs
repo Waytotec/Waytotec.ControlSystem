@@ -11,12 +11,15 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
     public class CameraDiscoveryService : ICameraDiscoveryService, IDisposable
     {
         private const int DISCOVERY_PORT = 20011;
+        private const int FIRMWARE_PORT = 7061;
+        private const int DISCOVERY_TIMEOUT = 10000;
         private const uint CFG_SIGNATURE = 0x53474643; // 'CFGS'
         private const uint MSG_GETCONFIG = 0x47464347; // 'GCFG' 
         private const uint MSG_GETCONFIGOK = 0x4B4F4347; // 'GCOK'
         private const int DEFAULT_TIMEOUT_MS = 5000;
 
         private UdpClient? _udpClient;
+        private bool _disposed = false;
         private bool _isDiscovering;
         private readonly object _lockObject = new();
         private CancellationTokenSource? _discoveryTokenSource;
@@ -419,8 +422,12 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
         {
             try
             {
-                _udpClient?.Close();
-                _udpClient?.Dispose();
+                if (_udpClient != null)
+                {
+                    _udpClient.Close();
+                    _udpClient.Dispose();
+                    _udpClient = null;
+                }
             }
             catch (Exception ex)
             {
@@ -434,8 +441,43 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
 
         public void Dispose()
         {
-            StopDiscoveryAsync().Wait();
-            _discoveryTokenSource?.Dispose();
+            if (_disposed) return;
+
+            try
+            {
+                lock (_lockObject)
+                {
+                    _disposed = true;
+                }
+
+                Debug.WriteLine("[CameraDiscoveryService] Dispose 시작");
+
+                // 1. CancellationToken 즉시 취소
+                _discoveryTokenSource?.Cancel();
+
+                // 2.UDP 소켓 강제 종료
+                CleanupUdpClient();
+
+                // 3. TokenSource 정리
+                try
+                {
+                    _discoveryTokenSource?.Dispose();
+                    _discoveryTokenSource = null;
+                    Debug.WriteLine("TokenSource 정리 완료");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"TokenSource 정리 오류: {ex.Message}");
+                }
+
+                Debug.WriteLine("[CameraDiscoveryService] Dispose 완료");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CameraDiscoveryService] Dispose 오류: {ex.Message}");
+            }
+
+            GC.SuppressFinalize(this);
         }
     }
 }
