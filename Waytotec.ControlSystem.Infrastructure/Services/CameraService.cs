@@ -10,58 +10,281 @@ using Waytotec.ControlSystem.Core.Models;
 
 namespace Waytotec.ControlSystem.Infrastructure.Services
 {
-    public class CameraService : ICameraService, ICameraDiscoveryService
+    public class CameraService : ICameraService, IDisposable
     {
-        private readonly CameraDiscoveryService _discoveryService;
-        public CameraService()
+        private UdpClient? _udpClient;
+        private bool _isScanning = false;
+        private CancellationTokenSource? _scanCts;
+        private readonly object _lockObject = new object();
+
+        // WaytotekUpgrade 프로젝트의 검색 패킷 데이터
+        private static readonly byte[] SearchPacket = {
+            0x47, 0x43, 0x46, 0x47, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x43, 0x46, 0x47, 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+
+        private const int PORT_NUMBER = 20011;
+
+        public bool IsScanning
         {
-            _discoveryService = new CameraDiscoveryService();
+            get
+            {
+                lock (_lockObject)
+                {
+                    return _isScanning;
+                }
+            }
+        }
+
+        public event Action<CameraInfo>? CameraFound;
+
+        public async Task<bool> StartScanAsync()
+        {
+            lock (_lockObject)
+            {
+                if (_isScanning)
+                {
+                    Debug.WriteLine("[CameraService] 이미 스캔 중입니다.");
+                    return false;
+                }
+
+                _isScanning = true;
+            }
+
+            try
+            {
+                Debug.WriteLine("[CameraService] 스캔 시작 시도...");
+                _scanCts = new CancellationTokenSource();
+
+                // UDP 클라이언트 초기화
+                _udpClient = new UdpClient();
+                var localEndPoint = new IPEndPoint(IPAddress.Any, PORT_NUMBER);
+
+                _udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                _udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
+                _udpClient.ExclusiveAddressUse = false;
+                _udpClient.Client.Bind(localEndPoint);
+
+                Debug.WriteLine($"[CameraService] UDP 클라이언트 바인딩 완료: 포트 {PORT_NUMBER}");
+
+                // 수신 대기 시작
+                _ = Task.Run(async () => await ReceiveLoopAsync(_scanCts.Token), _scanCts.Token);
+                Debug.WriteLine("[CameraService] 수신 루프 시작됨");
+
+                // 검색 패킷 전송
+                await SendSearchPacketAsync();
+                Debug.WriteLine("[CameraService] 검색 패킷 전송 완료");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CameraService] 검색 시작 실패: {ex.Message}");
+                Debug.WriteLine($"[CameraService] 스택 추적: {ex.StackTrace}");
+                await StopScanAsync();
+                return false;
+            }
+        }
+
+        public async Task StopScanAsync()
+        {
+            lock (_lockObject)
+            {
+                if (!_isScanning)
+                    return;
+
+                _isScanning = false;
+            }
+
+            try
+            {
+                _scanCts?.Cancel();
+                _udpClient?.Close();
+                _udpClient?.Dispose();
+                _udpClient = null;
+                _scanCts?.Dispose();
+                _scanCts = null;
+
+                Debug.WriteLine("[CameraService] 스캔 중지됨");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CameraService] 스캔 중지 오류: {ex.Message}");
+            }
+        }
+
+        private async Task SendSearchPacketAsync()
+        {
+            try
+            {
+                if (_udpClient == null) return;
+
+                var broadcastEndPoint = new IPEndPoint(IPAddress.Broadcast, PORT_NUMBER);
+                await _udpClient.SendAsync(SearchPacket, SearchPacket.Length, broadcastEndPoint);
+
+                Debug.WriteLine("[CameraService] 검색 패킷 전송됨");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CameraService] 검색 패킷 전송 실패: {ex.Message}");
+            }
+        }
+
+        private async Task ReceiveLoopAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested && _udpClient != null)
+                {
+                    var result = await _udpClient.ReceiveAsync();
+                    ProcessReceivedData(result.Buffer, result.RemoteEndPoint.Address.ToString());
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // UDP 클라이언트가 정리된 경우 - 정상적인 종료
+                Debug.WriteLine("[CameraService] UDP 클라이언트 정리됨");
+            }
+            catch (SocketException ex)
+            {
+                Debug.WriteLine($"[CameraService] 소켓 예외: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CameraService] 수신 루프 예외: {ex.Message}");
+            }
+        }
+
+        private void ProcessReceivedData(byte[] data, string sourceIP)
+        {
+            try
+            {
+                if (data.Length < 120) // _waytocam 구조체 최소 크기 체크
+                    return;
+
+                var cameraInfo = ParseCameraData(data, sourceIP);
+                if (cameraInfo != null)
+                {
+                    Debug.WriteLine($"[CameraService] 카메라 발견: {sourceIP}");
+
+                    // 버전 정보 비동기 획득
+                    _ = Task.Run(async () =>
+                    {
+                        cameraInfo.Version = await GetCameraVersionAsync(sourceIP);
+                        CameraFound?.Invoke(cameraInfo);
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CameraService] 데이터 처리 오류: {ex.Message}");
+            }
+        }
+
+        private static CameraInfo? ParseCameraData(byte[] data, string sourceIP)
+        {
+            try
+            {
+                // MAC 주소 추출 (오프셋 4, 6바이트)
+                var macBytes = new byte[6];
+                Array.Copy(data, 4, macBytes, 0, 6);
+
+                // 유효한 MAC 주소인지 확인
+                bool isValidMac = false;
+                for (int i = 0; i < 6; i++)
+                {
+                    if (macBytes[i] != 0xFF)
+                    {
+                        isValidMac = true;
+                        break;
+                    }
+                }
+
+                if (!isValidMac)
+                    return null;
+
+                // IP 주소 추출 (오프셋 14, 4바이트)
+                var ipBytes = new byte[4];
+                Array.Copy(data, 14, ipBytes, 0, 4);
+                var deviceIP = new IPAddress(ipBytes).ToString();
+
+                // 서브넷 마스크 추출 (오프셋 18, 4바이트)
+                var maskBytes = new byte[4];
+                Array.Copy(data, 18, maskBytes, 0, 4);
+                var subnetMask = new IPAddress(maskBytes).ToString();
+
+                // 게이트웨이 추출 (오프셋 22, 4바이트)
+                var gatewayBytes = new byte[4];
+                Array.Copy(data, 22, gatewayBytes, 0, 4);
+                var gateway = new IPAddress(gatewayBytes).ToString();
+
+                // HTTP 포트 추출 (오프셋 116, 4바이트)
+                var httpPort = BitConverter.ToInt32(data, 116);
+
+                return new CameraInfo
+                {
+                    Ip = deviceIP,
+                    Mac = string.Join("-", macBytes.Select(b => b.ToString("X2"))),
+                    Type = httpPort != 0 ? "A" : "P", // HTTP 포트가 있으면 A타입, 없으면 P타입
+                    Mask = subnetMask,
+                    Gateway = gateway,
+                    Version = "확인중..." // 비동기로 업데이트될 예정
+                };
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CameraService] 카메라 데이터 파싱 오류: {ex.Message}");
+                return null;
+            }
         }
 
         public async IAsyncEnumerable<CameraInfo> FindCamerasAsync([EnumeratorCancellation] CancellationToken token)
         {
             var channel = Channel.CreateUnbounded<CameraInfo>();
+            var foundCameras = new HashSet<string>();
 
-            void Handler(FindCamera._waytocam wt, string ip)
+            void Handler(CameraInfo camera)
             {
-                var camIp = new IPAddress(wt.ipAddress).ToString();
-
-                Task.Run(async () =>
+                if (foundCameras.Add(camera.Ip)) // 중복 방지
                 {
-                    var version = await GetCameraVersionAsync(camIp);
-
-                    var info = new CameraInfo
-                    {
-                        Ip = camIp,
-                        Mac = string.Join("-", wt.mac.Select(b => b.ToString("X2"))),
-                        Type = wt.httpjpegport != 0 ? "A" : "P",
-                        Mask = new IPAddress(wt.ipMask).ToString(),
-                        Gateway = new IPAddress(wt.ipGateway).ToString(),
-                        Version = version
-                    };
-
-                    channel.Writer.TryWrite(info);
-                });
-
-                Debug.WriteLine($"[INFO] Found camera: {camIp}");
+                    channel.Writer.TryWrite(camera);
+                }
             }
 
-            FindCamera.CallSendMsg += Handler;
-            var finder = new FindCamera();
-            finder.StartBind();
-            finder.send_command();
+            CameraFound += Handler;
 
             try
             {
-                await Task.Delay(10000, token);
+                await StartScanAsync();
+                await Task.Delay(10000, token); // 10초 스캔
             }
-            catch (TaskCanceledException) { }
+            catch (TaskCanceledException)
+            {
+                // 정상적인 취소
+            }
+            finally
+            {
+                CameraFound -= Handler;
+                await StopScanAsync();
+                channel.Writer.Complete();
+            }
 
-            finder.Stop();
-            FindCamera.CallSendMsg -= Handler;
-
-            while (channel.Reader.TryRead(out var item))
-                yield return item;
+            await foreach (var camera in channel.Reader.ReadAllAsync(token))
+            {
+                yield return camera;
+            }
         }
 
         private async Task<string> GetCameraVersionAsync(string ip)
@@ -73,37 +296,41 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
             try
             {
                 using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.ReceiveTimeout = 3000;
+                socket.SendTimeout = 3000;
+
                 await socket.ConnectAsync(IPAddress.Parse(ip), port);
 
                 await SendUserAuthAsync(socket);
-                await Task.Delay(100);
+                await Task.Delay(200);
                 await SendCamVersionAsync(socket);
 
-                socket.ReceiveTimeout = 2000;
-                int bytesRead;
+                int totalBytesRead = 0;
+                int maxRetries = 5;
+                int retryCount = 0;
 
-                do
+                while (retryCount < maxRetries)
                 {
                     try
                     {
-                        bytesRead = socket.Receive(buffer);
+                        int bytesRead = socket.Receive(buffer, totalBytesRead, buffer.Length - totalBytesRead, SocketFlags.None);
                         if (bytesRead == 0) break;
 
-                        string part = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                        string part = Encoding.ASCII.GetString(buffer, totalBytesRead, bytesRead);
                         stringBuilder.Append(part);
+                        totalBytesRead += bytesRead;
 
                         if (part.Contains("LOADVERSION="))
                             break;
                     }
-                    catch (SocketException ex)
+                    catch (SocketException)
                     {
-                        Debug.WriteLine($"[ERROR] Receive failed: {ex.Message}");
-                        break;
+                        retryCount++;
+                        await Task.Delay(100);
                     }
-                } while (true);
+                }
 
                 string message = stringBuilder.ToString();
-
                 if (message.Contains("LOADVERSION="))
                 {
                     var match = Regex.Match(message, @"LOADVERSION=([^;\r\n]+)");
@@ -115,7 +342,7 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"GetCameraVersionAsync error: {ex.Message}");
+                Debug.WriteLine($"[CameraService] 버전 확인 오류 ({ip}): {ex.Message}");
                 return "ERROR";
             }
         }
@@ -127,54 +354,16 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
             string checksum = CalculateChecksum(data);
 
             int authHeaderLength = 13 + cmd.Length;
-            int authDataLength = data.Length;
-
-            byte[] sendHeader = Encoding.ASCII.GetBytes(authHeaderLength.ToString("00") + authDataLength.ToString().PadLeft(12, '0'));
-            byte[] byteCheckSum = Encoding.Unicode.GetBytes(Convert.ToChar(Convert.ToUInt32(checksum, 16)).ToString());
+            byte[] sendHeader = Encoding.ASCII.GetBytes(authHeaderLength.ToString("00") + data.Length.ToString().PadLeft(12, '0'));
+            byte[] checksumByte = { Convert.ToByte(checksum, 16) };
             byte[] sendFooter = Encoding.ASCII.GetBytes(cmd + data);
-            Array.Resize(ref byteCheckSum, 1);
-            byte[] newByte = new byte[sendHeader.Length + sendFooter.Length + 1];
-            sendHeader.CopyTo(newByte, 0);
-            byteCheckSum.CopyTo(newByte, sendHeader.Length);
-            sendFooter.CopyTo(newByte, sendHeader.Length + byteCheckSum.Length);
 
+            byte[] message = new byte[sendHeader.Length + checksumByte.Length + sendFooter.Length];
+            sendHeader.CopyTo(message, 0);
+            checksumByte.CopyTo(message, sendHeader.Length);
+            sendFooter.CopyTo(message, sendHeader.Length + checksumByte.Length);
 
-            //string header = (13 + cmd.Length).ToString("00") + data.Length.ToString().PadLeft(12, '0');
-            //string message = header + Convert.ToChar(Convert.ToUInt32(checksum, 16)) + cmd + data;
-            //byte[] bytes = Encoding.ASCII.GetBytes(message);
-            //await socket.SendAsync(bytes, SocketFlags.None);
-
-            //var buffer = new byte[4096];
-            BeginSend(socket, newByte);
-
-
-        }
-
-        public void BeginSend(Socket socket, byte[] message)
-        {
-            try
-            {
-                socket.BeginSend(message, 0, message.Length, SocketFlags.None, new AsyncCallback(SendCallBack), message);
-            }
-            catch (SocketException e)
-            {
-
-            }
-        }
-
-        private void SendCallBack(IAsyncResult IAR)
-        {
-            string message = "";
-            if (IAR.AsyncState.GetType() == typeof(byte[]))
-            {
-                message = Encoding.ASCII.GetString((byte[])IAR.AsyncState);
-            }
-            else if (IAR.AsyncState.GetType() == typeof(string))
-            {
-                message = (string)IAR.AsyncState;
-            }
-
-            //txtSocketLog.InvokeIfNeed(() => txtSocketLog.Text += (Environment.NewLine + String.Format("전송 완료 : {0}", message)));
+            await socket.SendAsync(message, SocketFlags.None);
         }
 
         private async Task SendCamVersionAsync(Socket socket)
@@ -188,69 +377,16 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
             await socket.SendAsync(bytes, SocketFlags.None);
         }
 
-        private string CalculateChecksum(string dataToCalculate)
+        private static string CalculateChecksum(string dataToCalculate)
         {
             byte[] byteToCalculate = Encoding.ASCII.GetBytes(dataToCalculate);
-            int checksum = 0;
-
-            foreach (byte chData in byteToCalculate)
-            {
-                checksum += chData;
-            }
-
-            checksum &= 0xff;
+            int checksum = byteToCalculate.Sum(b => b) & 0xff;
             return checksum.ToString("X2");
-        }
-
-        // ICameraDiscoveryService 구현 (새로운 기능)
-        public bool IsDiscovering => _discoveryService.IsDiscovering;
-
-        public event EventHandler<CameraDiscoveredEventArgs>? CameraDiscovered
-        {
-            add => _discoveryService.CameraDiscovered += value;
-            remove => _discoveryService.CameraDiscovered -= value;
-        }
-
-        public event EventHandler<DiscoveryProgressEventArgs>? DiscoveryProgress
-        {
-            add => _discoveryService.DiscoveryProgress += value;
-            remove => _discoveryService.DiscoveryProgress -= value;
-        }
-
-        public event EventHandler<EventArgs>? DiscoveryCompleted
-        {
-            add => _discoveryService.DiscoveryCompleted += value;
-            remove => _discoveryService.DiscoveryCompleted -= value;
-        }
-
-        public async Task<IEnumerable<DiscoveredCamera>> DiscoverCamerasAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
-        {
-            return await _discoveryService.DiscoverCamerasAsync(timeout, cancellationToken);
-        }
-
-        public async Task StartContinuousDiscoveryAsync(CancellationToken cancellationToken = default)
-        {
-            await _discoveryService.StartContinuousDiscoveryAsync(cancellationToken);
-        }
-
-        public async Task StopDiscoveryAsync()
-        {
-            await _discoveryService.StopDiscoveryAsync();
-        }
-
-        public async Task<IEnumerable<DiscoveredCamera>> DiscoverCamerasInRangeAsync(IPAddress startIp, IPAddress endIp, CancellationToken cancellationToken = default)
-        {
-            return await _discoveryService.DiscoverCamerasInRangeAsync(startIp, endIp, cancellationToken);
-        }
-
-        public async Task<DiscoveredCamera?> VerifyCameraAsync(IPAddress ipAddress, CancellationToken cancellationToken = default)
-        {
-            return await _discoveryService.VerifyCameraAsync(ipAddress, cancellationToken);
         }
 
         public void Dispose()
         {
-            _discoveryService?.Dispose();
+            StopScanAsync().Wait(1000);
         }
     }
 }

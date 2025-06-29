@@ -1,6 +1,6 @@
-﻿
-using System.Windows.Input;
+﻿using System.Windows.Input;
 using Waytotec.ControlSystem.App.ViewModels.Pages;
+using Waytotec.ControlSystem.Core.Models;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace Waytotec.ControlSystem.App.Views.Pages
@@ -23,28 +23,24 @@ namespace Waytotec.ControlSystem.App.Views.Pages
             RtspViewer.Stop();
         }
 
-        private void DeviceGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void CameraGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (DeviceGrid.SelectedItem is Core.Models.DeviceStatus device && device != null)
+            if (CameraGrid.SelectedItem is CameraInfo camera && camera != null)
             {
-                RtspViewer.Load(ip: device.IPString, stream: "stream0");
+                RtspViewer.Load(ip: camera.Ip, stream: "stream0");
             }
-
-
-            //if (DataContext is UiWindow vm && vm.SelectedDevice != null)
-            //{
-            //    var detailWindow = new DeviceDetailWindow(vm.SelectedDevice);
-            //    // detailWindow.Owner = this;
-            //    detailWindow.ShowDialog();
-            //}
         }
 
         private void RtspViewer_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            // RtspVideoViewer me = sender as RtspVideoViewer;
+            // 현재 선택된 카메라의 IP 가져오기
+            string ip = "192.168.1.120"; // 기본값
+            string stream = "stream0";
 
-            string ip = "192.168.1.120"; // 현재 재생 중인 IP를 여기서 가져오세요
-            string stream = "stream0";   // 현재 stream 값도 같이 넘겨야 합니다
+            if (CameraGrid.SelectedItem is CameraInfo selectedCamera)
+            {
+                ip = selectedCamera.Ip;
+            }
 
             var popup = new RtspPopupWindow(ip, stream);
             popup.Show();

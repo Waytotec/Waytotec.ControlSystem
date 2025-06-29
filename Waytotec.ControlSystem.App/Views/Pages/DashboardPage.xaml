@@ -2,6 +2,7 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:controls="clr-namespace:Waytotec.ControlSystem.App.Views.Controls"
+      xmlns:converters="clr-namespace:Waytotec.ControlSystem.App.Converters"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:local="clr-namespace:Waytotec.ControlSystem.App.Views.Pages"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -16,6 +17,11 @@
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       mc:Ignorable="d">
 
+    <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:BoolToStringConverter x:Key="BoolToStringConverter"/>
+    </Page.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="3*" />
@@ -27,31 +33,52 @@
         </Grid.ColumnDefinitions>
 
         <!--  장비 리스트  -->
-        <DataGrid Name="DeviceGrid"
-                  Grid.Row="0"
-                  Grid.Column="0"
-                  Margin="10"
-                  AutoGenerateColumns="False"
-                  BorderBrush="{DynamicResource TextFillColorPrimaryBrush}"
-                  BorderThickness="2"
-                  CanUserSortColumns="True"
-                  IsReadOnly="True"
-                  ItemsSource="{Binding Devices}"
-                  MouseDoubleClick="DeviceGrid_MouseDoubleClick"
-                  SelectedItem="{Binding SelectedDevice, Mode=TwoWay}"
-                  SelectionMode="Single"
-                  SelectionUnit="FullRow">
-            <DataGrid.Columns>
-                <DataGridTextColumn Binding="{Binding DeviceId}"
-                                    Header="장비명" />
-                <DataGridTextColumn Binding="{Binding IPString}"
-                                    Header="IP" />
-                <DataGridTextColumn Binding="{Binding MacAddressString}"
-                                    Header="MAC 주소" />
-                <DataGridTextColumn Binding="{Binding Version}"
-                                    Header="버전" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <Grid Grid.Row="0" Grid.Column="0" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 스캔 상태 표시 -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="스캔 상태: " VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding ViewModel.ScanStatus}" 
+                           VerticalAlignment="Center" 
+                           FontWeight="Bold"
+                           Foreground="Blue"/>
+                <ProgressBar Width="100" Height="20" Margin="10,0,0,0"
+                             IsIndeterminate="{Binding ViewModel.IsScanning}"
+                             Visibility="{Binding ViewModel.IsScanning, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </StackPanel>
+
+            <!-- 발견된 카메라 목록 -->
+            <DataGrid Name="CameraGrid"
+                      Grid.Row="1"
+                      AutoGenerateColumns="False"
+                      BorderBrush="Gray"
+                      BorderThickness="1"
+                      CanUserSortColumns="True"
+                      IsReadOnly="True"
+                      ItemsSource="{Binding ViewModel.Cameras}"
+                      MouseDoubleClick="CameraGrid_MouseDoubleClick"
+                      SelectionMode="Single"
+                      SelectionUnit="FullRow">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Binding="{Binding Ip}"
+                                        Header="IP 주소" 
+                                        Width="120"/>
+                    <DataGridTextColumn Binding="{Binding Mac}"
+                                        Header="MAC 주소" 
+                                        Width="140"/>
+                    <DataGridTextColumn Binding="{Binding Type}"
+                                        Header="타입" 
+                                        Width="50"/>
+                    <DataGridTextColumn Binding="{Binding Version}"
+                                        Header="버전" 
+                                        Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
 
         <!--  영상 영역  -->
         <Border Grid.Row="0"
@@ -71,7 +98,7 @@
             <WrapPanel Margin="0,0,0,10">
                 <Button Width="100"
                         Margin="5"
-                        Command="{Binding PingTestCommand}"
+                        Command="{Binding ViewModel.PingTestCommand}"
                         Content="Ping 테스트" />
                 <Button Width="100"
                         Margin="5"
@@ -79,10 +106,14 @@
                 <Button Width="100"
                         Margin="5"
                         Content="엑셀변환" />
-                <Button Width="100"
+                <Button Width="120"
                         Margin="5"
-                        Content="Cam finder 실행"
-                        Command="{Binding ScanCommand}" />
+                        Content="{Binding ViewModel.IsScanning, Converter={StaticResource BoolToStringConverter}, ConverterParameter='검색 중지:카메라 검색'}"
+                        Command="{Binding ViewModel.ScanCommand}" />
+                <Button Width="80"
+                        Margin="5"
+                        Content="테스트 추가"
+                        Click="TestAddCamera_Click" />
             </WrapPanel>
             <WrapPanel>
                 <Button Width="100"

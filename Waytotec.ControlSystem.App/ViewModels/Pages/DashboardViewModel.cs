@@ -1,14 +1,18 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Windows;
 using Waytotec.ControlSystem.Core.Interfaces;
 using Waytotec.ControlSystem.Core.Models;
+using Waytotec.ControlSystem.Infrastructure.Services;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace Waytotec.ControlSystem.App.ViewModels.Pages
 {
-    public partial class DashboardViewModel : ObservableObject, INavigationAware
+    public partial class DashboardViewModel : ObservableObject, INavigationAware, INotifyPropertyChanged
     {
         private bool _isInitialized = false;
         private int _pingOffsetIndex = 0;
@@ -20,91 +24,154 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         [ObservableProperty]
         private DeviceStatus _selectedDevice;
 
+        private bool _isScanning = false;
+        public bool IsScanning
+        {
+            get => _isScanning;
+            set
+            {
+                if (_isScanning != value)
+                {
+                    _isScanning = value;
+                    OnPropertyChanged();
+                    ScanCommand.NotifyCanExecuteChanged();
+                }
+            }
+        }
+
+        private string _scanStatus = "준비됨";
+        public string ScanStatus
+        {
+            get => _scanStatus;
+            set
+            {
+                if (_scanStatus != value)
+                {
+                    _scanStatus = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public ObservableCollection<DeviceStatus> Devices { get; } = new();
         private readonly IDeviceService _deviceService;
         private readonly ICameraService _cameraService;
-        private readonly ICameraDiscoveryService _cameraDiscoveryService;
-
 
         public ObservableCollection<CameraInfo> Cameras { get; } = new();
-        public ObservableCollection<DiscoveredCamera> DiscoveredCameras { get; } = new();
-
-        [ObservableProperty]
-        private bool _isCameraScanning = false;
-
-        [ObservableProperty]
-        private int _discoveredCameraCount = 0;
-
-        [ObservableProperty]
-        private string _cameraSearchStatus = "준비완료";
-
         public IAsyncRelayCommand ScanCommand { get; }
-        public IAsyncRelayCommand QuickScanCommand { get; }
 
         private string _title = "Waytotec Device Control System";
 
-        public DashboardViewModel(IDeviceService deviceService, ICameraService cameraService, ICameraDiscoveryService cameraDiscoveryService)
+        public DashboardViewModel(IDeviceService deviceService, ICameraService cameraService)
         {
             _deviceService = deviceService;
             _cameraService = cameraService;
-            _cameraDiscoveryService = cameraDiscoveryService;
 
-            ScanCommand = new AsyncRelayCommand(ScanAsync);
-            QuickScanCommand = new AsyncRelayCommand(QuickScanAsync);
+            ScanCommand = new AsyncRelayCommand(ScanAsync, () => !IsScanning);
 
-            // 카메라 검색 이벤트 구독
-            _cameraDiscoveryService.CameraDiscovered += OnCameraDiscovered;
-            _cameraDiscoveryService.DiscoveryProgress += OnDiscoveryProgress;
-            _cameraDiscoveryService.DiscoveryCompleted += OnDiscoveryCompleted;
+            // 카메라 발견 이벤트 구독
+            _cameraService.CameraFound += OnCameraFound;
+
+            Debug.WriteLine("[DashboardViewModel] 생성자 완료, 이벤트 구독됨");
         }
 
+        private void OnCameraFound(CameraInfo cameraInfo)
+        {
+            Debug.WriteLine($"[DashboardViewModel] 카메라 발견 이벤트 수신: {cameraInfo.Ip}");
+
+            // UI 스레드에서 실행
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                try
+                {
+                    // 중복 체크
+                    if (!Cameras.Any(c => c.Ip == cameraInfo.Ip))
+                    {
+                        Cameras.Add(cameraInfo);
+                        ScanStatus = $"검색 중... ({Cameras.Count}개 발견)";
+                        Debug.WriteLine($"[DashboardViewModel] 카메라 추가됨: {cameraInfo.Ip}, 총 {Cameras.Count}개");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"[DashboardViewModel] 중복 카메라 무시: {cameraInfo.Ip}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[DashboardViewModel] 카메라 추가 오류: {ex.Message}");
+                }
+            });
+        }
 
         private async Task ScanAsync()
         {
-            Cameras.Clear();
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            await foreach (var cam in _cameraService.FindCamerasAsync(cts.Token))
-            {
-                if (!Cameras.Any(c => c.Ip == cam.Ip))
-                    Cameras.Add(cam);
-            }
-        }
-
-        /// <summary>
-        /// 새로운 빠른 검색 (새로운 검색 서비스 사용)
-        /// </summary>
-        private async Task QuickScanAsync()
-        {
             try
             {
-                IsCameraScanning = true;
-                CameraSearchStatus = "카메라 검색 중...";
-                DiscoveredCameras.Clear();
+                Debug.WriteLine("[DashboardViewModel] ScanAsync 시작");
 
-                var stopwatch = Stopwatch.StartNew();
+                IsScanning = true;
+                ScanStatus = "카메라 검색 준비 중...";
 
-                var cameras = await _cameraDiscoveryService.DiscoverCamerasAsync(
-                    TimeSpan.FromSeconds(5), // 빠른 검색이므로 5초로 단축
-                    CancellationToken.None);
-
-                stopwatch.Stop();
-
-                foreach (var camera in cameras)
+                // 기존 카메라 목록 클리어
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    DiscoveredCameras.Add(camera);
+                    Cameras.Clear();
+                    Debug.WriteLine("[DashboardViewModel] 기존 카메라 목록 클리어됨");
+                });
+
+                ScanStatus = "카메라 검색 시작...";
+
+                // 스캔 시작
+                bool scanStarted = await _cameraService.StartScanAsync();
+
+                if (!scanStarted)
+                {
+                    ScanStatus = "스캔 시작 실패";
+                    Debug.WriteLine("[DashboardViewModel] 스캔 시작 실패");
+                    return;
                 }
 
-                DiscoveredCameraCount = DiscoveredCameras.Count;
-                CameraSearchStatus = $"검색 완료 - {DiscoveredCameraCount}대 발견 ({stopwatch.Elapsed.TotalSeconds:F1}초)";
+                Debug.WriteLine("[DashboardViewModel] 스캔 시작됨, 10초 대기");
+                ScanStatus = "카메라 검색 중... (0개 발견)";
+
+                // 10초간 대기 (스캔 진행)
+                var scanTask = Task.Delay(10000);
+                var progressTask = UpdateScanProgress();
+
+                await Task.WhenAll(scanTask, progressTask);
+
+                // 스캔 종료
+                await _cameraService.StopScanAsync();
+                Debug.WriteLine("[DashboardViewModel] 스캔 종료됨");
+
+                ScanStatus = $"스캔 완료 - {Cameras.Count}개 발견";
+                Debug.WriteLine($"[DashboardViewModel] 스캔 완료: {Cameras.Count}개 카메라 발견");
             }
             catch (Exception ex)
             {
-                CameraSearchStatus = $"검색 오류: {ex.Message}";
-                Debug.WriteLine($"[Dashboard] 카메라 검색 오류: {ex}");
+                ScanStatus = $"스캔 오류: {ex.Message}";
+                Debug.WriteLine($"[DashboardViewModel] 스캔 오류: {ex.Message}");
             }
             finally
             {
-                IsCameraScanning = false;
+                IsScanning = false;
+                Debug.WriteLine("[DashboardViewModel] ScanAsync 완료");
+            }
+        }
+
+        private async Task UpdateScanProgress()
+        {
+            int progress = 0;
+            while (IsScanning && progress < 100)
+            {
+                await Task.Delay(100);
+                progress += 1;
+
+                if (progress % 10 == 0) // 1초마다 업데이트
+                {
+                    var currentCount = Cameras.Count;
+                    ScanStatus = $"카메라 검색 중... ({progress / 10}초 경과, {currentCount}개 발견)";
+                }
             }
         }
 
@@ -112,8 +179,6 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         {
             if (_isInitialized)
                 return;
-
-            // await Task.Delay(5000); // 실제 장비 상태 가져오는 시뮬레이션
 
             var statuses = await _deviceService.GetAllStatusesAsync();
             Devices.Clear();
@@ -156,92 +221,11 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             Process.Start(psi);
         }
 
-
-        /// <summary>
-        /// 카메라 검색 이벤트 핸들러들
-        /// </summary>
-        private void OnCameraDiscovered(object? sender, CameraDiscoveredEventArgs e)
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                var existing = DiscoveredCameras.FirstOrDefault(c => c.IpAddress.Equals(e.Camera.IpAddress));
-                if (existing != null)
-                {
-                    // 기존 카메라 정보 업데이트
-                    existing.Status = e.Camera.Status;
-                    existing.LastSeen = e.Camera.LastSeen;
-                    existing.Version = e.Camera.Version;
-                }
-                else
-                {
-                    DiscoveredCameras.Add(e.Camera);
-                }
-
-                DiscoveredCameraCount = DiscoveredCameras.Count;
-            });
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        private void OnDiscoveryProgress(object? sender, DiscoveryProgressEventArgs e)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                CameraSearchStatus = $"검색 중... {e.TotalFound}대 발견 (경과: {e.ElapsedTime.TotalSeconds:F0}초)";
-            });
-        }
-
-        private void OnDiscoveryCompleted(object? sender, EventArgs e)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (!IsCameraScanning) return; // 이미 완료된 경우 무시
-
-                IsCameraScanning = false;
-                CameraSearchStatus = $"검색 완료 - {DiscoveredCameraCount}대 발견";
-            });
-        }
-        /// <summary>
-        /// 검색된 카메라를 기본 장비 목록에 추가
-        /// </summary>
-        [RelayCommand]
-        private void AddDiscoveredCamerasToDevices()
-        {
-            foreach (var camera in DiscoveredCameras)
-            {
-                // 이미 존재하는지 확인
-                var existing = Devices.FirstOrDefault(d => d.IPString == camera.IpAddressString);
-                if (existing == null)
-                {
-                    var deviceStatus = new DeviceStatus
-                    {
-                        DeviceId = $"CAM_{camera.IpAddressString.Replace(".", "_")}",
-                        Type = DeviceType.Camera,
-                        IsOnline = camera.Status == CameraStatus.Online,
-                        StatusMessage = camera.StatusText,
-                        LastUpdated = camera.LastSeen,
-                        IP = camera.IpAddress,
-                        MacAddress = new MacAddress(camera.MacAddress),
-                        Version = camera.Version
-                    };
-
-                    Devices.Add(deviceStatus);
-                }
-            }
-
-            CameraSearchStatus = $"{DiscoveredCameras.Count}대의 카메라를 장비 목록에 추가했습니다.";
-        }
-
-        /// <summary>
-        /// 리소스 정리
-        /// </summary>
-        public void Dispose()
-        {
-            if (_cameraDiscoveryService != null)
-            {
-                _cameraDiscoveryService.CameraDiscovered -= OnCameraDiscovered;
-                _cameraDiscoveryService.DiscoveryProgress -= OnDiscoveryProgress;
-                _cameraDiscoveryService.DiscoveryCompleted -= OnDiscoveryCompleted;
-            }
-        }
-
+        public new event PropertyChangedEventHandler? PropertyChanged;
     }
 }
