@@ -23,7 +23,7 @@
         <conv:StatusToColorConverter x:Key="StatusToColorConverter" />
 
         <!--  불린 반전 컨버터  -->
-        <conv:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+        <conv:in x:Key="InverseBooleanConverter" />
     </Page.Resources>
 
     <Grid Margin="20">

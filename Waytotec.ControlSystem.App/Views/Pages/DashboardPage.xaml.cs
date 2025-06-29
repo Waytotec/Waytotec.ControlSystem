@@ -45,5 +45,10 @@ namespace Waytotec.ControlSystem.App.Views.Pages
             var popup = new RtspPopupWindow(ip, stream);
             popup.Show();
         }
+
+        private void TestAddCamera_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
