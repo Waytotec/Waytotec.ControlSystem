@@ -38,29 +38,18 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="30" />
         </Grid.RowDefinitions>
 
         <!-- 상단 영역 (고정) -->
         <StackPanel Grid.Row="0" Margin="20,20,20,0">
             <!--  제목 및 요약 정보  -->
-            <Grid Margin="0,0,0,20">
+            <Grid Margin="0,0,0,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0">
-                    <TextBlock
-                        FontSize="28"
-                        FontWeight="Bold"
-                        Text="카메라 검색" />
-                    <TextBlock
-                        Margin="0,5,0,0"
-                        FontSize="14"
-                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                        Text="{Binding StatusMessage}" />
-                </StackPanel>
 
                 <GroupBox
                     Grid.Column="1"

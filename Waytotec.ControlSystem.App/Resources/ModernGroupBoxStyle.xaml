@@ -3,7 +3,7 @@
     <!--  Modern GroupBox Style  -->
     <Style x:Key="ModernGroupBoxStyle" TargetType="{x:Type GroupBox}">
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="20" />
+        <Setter Property="Padding" Value="10" />
         <Setter Property="Margin" Value="0,10" />
         <Setter Property="Template">
             <Setter.Value>
@@ -36,13 +36,13 @@
                         <Border
                             Grid.Row="0"
                             Margin="1"
-                            Padding="20,15"
+                            Padding="5,5"
                             Background="{DynamicResource SubtleFillColorSecondaryBrush}"
                             CornerRadius="8,8,0,0">
                             <ContentPresenter ContentSource="Header" RecognizesAccessKey="True">
                                 <ContentPresenter.Resources>
                                     <Style TargetType="{x:Type TextBlock}">
-                                        <Setter Property="FontSize" Value="16" />
+                                        <Setter Property="FontSize" Value="12" />
                                         <Setter Property="FontWeight" Value="SemiBold" />
                                         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                                     </Style>
