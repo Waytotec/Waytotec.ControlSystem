@@ -19,6 +19,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         private readonly object _camerasLock = new();
         private readonly Timer _refreshTimer;
         private bool _disposed = false;
+        private readonly Random _random = new();
 
         [ObservableProperty]
         private ObservableCollection<DiscoveredCamera> _cameras = new();
@@ -81,6 +82,9 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         public IRelayCommand ExportCommand { get; }
         public IRelayCommand FilterCommand { get; }
 
+        public IAsyncRelayCommand GenerateTestDataCommand { get; }
+
+
         // 컬렉션 뷰 (필터링 및 정렬용)
         public ICollectionView CamerasView { get; }
 
@@ -110,6 +114,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             SortCommand = new RelayCommand<string>(SortBy);
             ExportCommand = new RelayCommand(ExportToFile, () => Cameras.Count > 0);
             FilterCommand = new RelayCommand(ApplyFilter);
+            GenerateTestDataCommand = new AsyncRelayCommand(GenerateTestDataAsync, () => !IsScanning);
 
             // 이벤트 구독
             _discoveryService.CameraDiscovered += OnCameraDiscovered;
@@ -484,6 +489,11 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                 RefreshSelectedCommand.NotifyCanExecuteChanged();
                 ClearListCommand.NotifyCanExecuteChanged();
                 ExportCommand.NotifyCanExecuteChanged();
+                GenerateTestDataCommand.NotifyCanExecuteChanged();
+            }
+            if (e.PropertyName == nameof(Cameras))
+            {
+                ExportCommand.NotifyCanExecuteChanged();
             }
         }
 
@@ -520,6 +530,176 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             });
         }
 
+        #region 테스트 데이터 생성 기능
+
+        /// <summary>
+        /// 테스트 데이터 100건 생성
+        /// </summary>
+        private async Task GenerateTestDataAsync()
+        {
+            try
+            {
+                IsScanning = true;
+                StatusMessage = "테스트 데이터 생성 중...";
+                ShowProgress = true;
+                ScanProgress = 0;
+
+                // UI 반응성을 위해 비동기로 처리
+                await Task.Run(async () =>
+                {
+                    const int totalItems = 100;
+
+                    // 기존 데이터 정리
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        lock (_camerasLock)
+                        {
+                            Cameras.Clear();
+                        }
+                    });
+
+                    var testCameras = new List<DiscoveredCamera>();
+
+                    for (int i = 0; i < totalItems; i++)
+                    {
+                        var camera = GenerateRandomCamera(i + 1);
+                        testCameras.Add(camera);
+
+                        // 진행률 업데이트
+                        var progress = ((double)(i + 1) / totalItems) * 100;
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            ScanProgress = progress;
+                            StatusMessage = $"테스트 데이터 생성 중... ({i + 1}/{totalItems})";
+                        });
+
+                        // UI 갱신을 위한 작은 지연
+                        if (i % 10 == 0)
+                        {
+                            await Task.Delay(50);
+                        }
+                    }
+
+                    // 모든 데이터를 한 번에 추가
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        lock (_camerasLock)
+                        {
+                            foreach (var camera in testCameras)
+                            {
+                                Cameras.Add(camera);
+                            }
+                            DiscoveredCount = Cameras.Count;
+                        }
+
+                        CamerasView.Refresh();
+                        StatusMessage = $"테스트 데이터 생성 완료 - {totalItems}대";
+                    });
+                });
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"테스트 데이터 생성 오류: {ex.Message}";
+                Debug.WriteLine($"[CameraDiscovery] 테스트 데이터 생성 오류: {ex}");
+            }
+            finally
+            {
+                IsScanning = false;
+                ShowProgress = false;
+                ScanProgress = 0;
+            }
+        }
+
+        /// <summary>
+        /// 랜덤 카메라 데이터 생성
+        /// </summary>
+        private DiscoveredCamera GenerateRandomCamera(int index)
+        {
+            // 다양한 IP 대역 생성
+            var ipRanges = new[]
+            {
+                "192.168.1.", "192.168.0.", "192.168.100.", "10.0.0.",
+                "10.1.1.", "172.16.1.", "172.20.1.", "192.168.10."
+            };
+
+            var selectedRange = ipRanges[_random.Next(ipRanges.Length)];
+            var ipLastOctet = _random.Next(1, 255);
+            var ipAddress = IPAddress.Parse($"{selectedRange}{ipLastOctet}");
+
+            // 카메라 제조사별 MAC 주소 OUI (처음 3바이트)
+            var macOuis = new[]
+            {
+                "00:12:34", // 가상 제조사 A
+                "AA:BB:CC", // 가상 제조사 B  
+                "11:22:33", // 가상 제조사 C
+                "FF:EE:DD", // 가상 제조사 D
+                "AB:CD:EF", // 가상 제조사 E
+                "12:AB:34", // 가상 제조사 F
+            };
+
+            var selectedOui = macOuis[_random.Next(macOuis.Length)];
+            var macAddress = $"{selectedOui}:{_random.Next(0, 256):X2}:{_random.Next(0, 256):X2}:{_random.Next(0, 256):X2}";
+
+            // 시리얼 번호 생성 (제조사별 패턴)
+            var serialPatterns = new[]
+            {
+                $"WTC{_random.Next(100000, 999999):D6}",
+                $"CAM{_random.Next(10000, 99999):D5}",
+                $"IP{_random.Next(1000000, 9999999):D7}",
+                $"DVC{DateTime.Now.Year}{_random.Next(1000, 9999):D4}",
+                $"NET{_random.Next(100, 999):D3}{_random.Next(100, 999):D3}",
+            };
+
+            var serialNumber = serialPatterns[_random.Next(serialPatterns.Length)];
+
+            // 펌웨어 버전 생성
+            var majorVersion = _random.Next(1, 5);
+            var minorVersion = _random.Next(0, 10);
+            var buildVersion = _random.Next(0, 100);
+            var version = $"v{majorVersion}.{minorVersion}.{buildVersion}";
+
+            // 상태 랜덤 생성 (대부분 Online으로)
+            var statuses = new[]
+            {
+                CameraStatus.Online,     // 70% 확률
+                CameraStatus.Online,
+                CameraStatus.Online,
+                CameraStatus.Online,
+                CameraStatus.Online,
+                CameraStatus.Online,
+                CameraStatus.Online,
+                CameraStatus.Offline,    // 20% 확률
+                CameraStatus.Offline,
+                CameraStatus.Error       // 10% 확률
+            };
+
+            var status = statuses[_random.Next(statuses.Length)];
+
+            // 마지막 확인 시간 (최근 24시간 내)
+            var lastSeen = DateTime.Now.AddMinutes(-_random.Next(0, 1440));
+
+            return new DiscoveredCamera
+            {
+                Id = $"Camera_{index:D3}",
+                IpAddress = ipAddress,
+                MacAddress = macAddress,
+                SerialNumber = serialNumber,
+                Version = version,
+                Status = status,
+                LastSeen = lastSeen,
+
+                // 네트워크 정보
+                SubnetMask = IPAddress.Parse("255.255.255.0"),
+                Gateway = IPAddress.Parse($"{selectedRange}1"),
+
+                // 포트 정보 (랜덤 변형)
+                HttpPort = 80 + _random.Next(0, 3) * 8080, // 80, 8080, 16160
+                RtspPort = 554 + _random.Next(0, 2) * 4000, // 554, 4554
+                HttpJpegPort = 8080 + _random.Next(0, 10) * 10, // 8080-8170
+                PtzPort = _random.Next(0, 100) > 70 ? 1024 + _random.Next(0, 1000) : 0 // 30% 확률로 PTZ 지원
+            };
+        }
+        #endregion
         public void Dispose()
         {
             if (_disposed) return;

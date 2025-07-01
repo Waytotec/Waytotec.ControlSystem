@@ -23,7 +23,7 @@
         <conv:StatusToColorConverter x:Key="StatusToColorConverter" />
 
         <!--  불린 반전 컨버터  -->
-        <conv:in x:Key="InverseBooleanConverter" />
+        <conv:InverseBooleanConverter x:Key="InverseBooleanConverter" />
     </Page.Resources>
 
     <Grid Margin="20">
@@ -103,6 +103,16 @@
                     Content="검색 중지"
                     Icon="{ui:SymbolIcon Stop24}"
                     IsEnabled="{Binding IsScanning}" />
+
+                <ui:Button
+                    Margin="0,0,5,0"
+                    Appearance="Secondary"
+                    Background="#4CAF50"
+                    Command="{Binding GenerateTestDataCommand}"
+                    Content="테스트 검색"
+                    Foreground="White"
+                    Icon="{ui:SymbolIcon Beaker24}"
+                    ToolTip="실제 카메라가 없을 때 100건의 테스트 데이터를 생성합니다" />
 
                 <ui:Button
                     Margin="0,0,10,0"
@@ -212,6 +222,9 @@
             HeadersVisibility="Column"
             IsReadOnly="True"
             ItemsSource="{Binding CamerasView}"
+            KeyDown="CameraDataGrid_KeyDown"
+            MouseDoubleClick="CameraDataGrid_MouseDoubleClick"
+            RowHeight="30"
             SelectedItem="{Binding SelectedCamera}"
             SelectionMode="Single"
             SelectionUnit="FullRow">
@@ -262,27 +275,48 @@
                     CanUserSort="True"
                     Header="버전" />
 
+
                 <!--  포트 정보  -->
-                <DataGridTextColumn
+                <DataGridTemplateColumn
                     Width="180"
-                    Binding="{Binding PortInfo}"
                     CanUserSort="False"
-                    Header="포트 정보" />
+                    Header="포트 정보">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock>
+                                <Run Text="HTTP:" />
+                                <Run Text="{Binding HttpPort}" />
+                                <Run Text=" RTSP:" />
+                                <Run Text="{Binding RtspPort}" />
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
 
                 <!--  마지막 확인  -->
                 <DataGridTextColumn
-                    Width="100"
+                    Width="140"
                     Binding="{Binding LastSeenText}"
                     CanUserSort="True"
                     Header="마지막 확인"
                     SortMemberPath="LastSeen" />
 
                 <!--  네트워크 정보  -->
-                <DataGridTextColumn
+                <DataGridTemplateColumn
                     Width="*"
-                    Binding="{Binding NetworkInfo}"
                     CanUserSort="False"
-                    Header="네트워크 정보" />
+                    Header="네트워크 정보">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock>
+                                <Run Text="서브넷:" />
+                                <Run Text="{Binding SubnetMask}" />
+                                <Run Text=" 게이트웨이:" />
+                                <Run Text="{Binding Gateway}" />
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
 
             <DataGrid.RowStyle>
@@ -293,6 +327,9 @@
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Status}" Value="Error">
                             <Setter Property="Foreground" Value="Red" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Status}" Value="Online">
+                            <Setter Property="Foreground" Value="Black" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -322,19 +359,38 @@
         </DataGrid>
 
         <!--  하단 상태바  -->
-        <StatusBar Grid.Row="3" Margin="0,10,0,0">
-            <StatusBarItem>
-                <TextBlock Text="{Binding StatusMessage}" />
-            </StatusBarItem>
-            <StatusBarItem HorizontalAlignment="Right">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="총 " />
-                    <TextBlock FontWeight="Bold" Text="{Binding DiscoveredCount}" />
-                    <TextBlock Text="대 발견" />
-                    <TextBlock Margin="10,0,0,0" Text=" | 선택: " />
-                    <TextBlock Text="{Binding SelectedCamera.IpAddressString, FallbackValue='없음'}" />
-                </StackPanel>
-            </StatusBarItem>
-        </StatusBar>
+        <!--  하단 상태 표시줄  -->
+        <Grid Grid.Row="3" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!--  상태 메시지  -->
+            <TextBlock
+                Grid.Column="0"
+                VerticalAlignment="Center"
+                FontWeight="Bold"
+                Text="{Binding StatusMessage}" />
+
+            <!--  선택된 카메라 정보  -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBlock
+                    Margin="0,0,5,0"
+                    VerticalAlignment="Center"
+                    Text="선택됨:" />
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontWeight="Bold"
+                    Foreground="Blue">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="{}{0} ({1})">
+                            <Binding Path="SelectedCamera.IpAddressString" />
+                            <Binding Path="SelectedCamera.StatusText" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Page>
