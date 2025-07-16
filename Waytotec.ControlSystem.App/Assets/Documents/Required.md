@@ -1,4 +1,6 @@
 
+Git 주소 변경 : https://github.com/Waytotec/Waytotec.ControlSystem.git
+
 # 🚀 화면 설계 및 기능 리스트
 
 WPF 기반의 디바이스 통합 제어 및 모니터링 시스템입니다.  
