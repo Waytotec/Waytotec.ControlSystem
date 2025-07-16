@@ -1,5 +1,5 @@
 
-Git 주소 변경 : https://github.com/Waytotec/Waytotec.ControlSystem.git
+Git 주소 변경1 : https://github.com/Waytotec/Waytotec.ControlSystem.git
 
 # 🚀 화면 설계 및 기능 리스트
 
