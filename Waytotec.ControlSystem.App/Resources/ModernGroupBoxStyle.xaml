@@ -36,7 +36,7 @@
                         <Border
                             Grid.Row="0"
                             Margin="1"
-                            Padding="5,5"
+                            Padding="10,5"
                             Background="{DynamicResource SubtleFillColorSecondaryBrush}"
                             CornerRadius="8,8,0,0">
                             <ContentPresenter ContentSource="Header" RecognizesAccessKey="True">

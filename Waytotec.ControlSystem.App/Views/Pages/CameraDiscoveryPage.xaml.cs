@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Windows.Controls;
+using System.Windows.Media;
 using Waytotec.ControlSystem.App.ViewModels.Pages;
 using Wpf.Ui.Abstractions.Controls;
 
@@ -111,11 +113,87 @@ namespace Waytotec.ControlSystem.App.Views.Pages
 
                     Process.Start(startInfo);
 
-                    ShowNotification($"웹 인터페이스 열기: {url}");
+                    // ShowNotification($"웹 인터페이스 열기: {url}");
                 }
                 catch (Exception ex)
                 {
                     ShowNotification($"웹 인터페이스 열기 실패: {ex.Message}");
+                }
+            }
+        }
+
+
+        // VisualTree에서 특정 타입의 자식 요소를 찾는 헬퍼 메서드
+        private static T GetVisualChild<T>(DependencyObject parent) where T : Visual
+        {
+            T child = default(T);
+            int numVisuals = VisualTreeHelper.GetChildrenCount(parent);
+
+            for (int i = 0; i < numVisuals; i++)
+            {
+                Visual v = (Visual)VisualTreeHelper.GetChild(parent, i);
+                child = v as T;
+
+                if (child == null)
+                {
+                    child = GetVisualChild<T>(v);
+                }
+
+                if (child != null)
+                {
+                    break;
+                }
+            }
+
+            return child;
+        }
+
+        private void CameraDataGrid_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            // 클릭한 위치에서 DataGridRow를 찾습니다
+            var hit = e.OriginalSource as DependencyObject;
+
+            while (hit != null && !(hit is DataGridRow) && !(hit is System.Windows.Documents.Run))
+            {
+                hit = VisualTreeHelper.GetParent(hit);
+            }
+
+            if (hit is DataGridRow row)
+            {
+                // Row를 찾았으면 선택합니다
+                CameraDataGrid.SelectedItem = row.Item;
+                row.IsSelected = true;
+            }
+            else
+            {
+                // Row를 찾지 못했지만 DataGrid 내부를 클릭한 경우
+                // 마우스 위치에서 가장 가까운 Row를 찾습니다
+                Point mousePosition = e.GetPosition(CameraDataGrid);
+
+                // ScrollViewer를 찾습니다
+                var scrollViewer = GetVisualChild<ScrollViewer>(CameraDataGrid);
+                if (scrollViewer != null)
+                {
+                    // 헤더 높이를 고려한 실제 콘텐츠 영역에서의 Y 위치
+                    double contentY = mousePosition.Y - CameraDataGrid.ColumnHeaderHeight;
+
+                    if (contentY > 0)
+                    {
+                        // 클릭한 위치에 해당하는 Row 인덱스 계산
+                        int rowIndex = (int)(contentY / CameraDataGrid.RowHeight);
+
+                        // 스크롤 위치도 고려
+                        if (scrollViewer != null)
+                        {
+                            rowIndex += (int)(scrollViewer.VerticalOffset / CameraDataGrid.RowHeight);
+                        }
+
+                        // 유효한 인덱스인지 확인하고 선택
+                        if (rowIndex >= 0 && rowIndex < CameraDataGrid.Items.Count)
+                        {
+                            CameraDataGrid.SelectedIndex = rowIndex;
+                        }
+                    }
                 }
             }
         }

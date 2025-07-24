@@ -4,10 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Windows;
 using Waytotec.ControlSystem.Core.Interfaces;
 using Waytotec.ControlSystem.Core.Models;
-using Waytotec.ControlSystem.Infrastructure.Services;
 using Wpf.Ui.Abstractions.Controls;
 
 namespace Waytotec.ControlSystem.App.ViewModels.Pages
@@ -179,6 +177,8 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         {
             if (_isInitialized)
                 return;
+
+            await Task.Delay(5000); // 실제 장비 상태 가져오는 시뮬레이션
 
             var statuses = await _deviceService.GetAllStatusesAsync();
             Devices.Clear();

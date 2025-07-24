@@ -20,6 +20,7 @@
     WindowBackdropType="Mica"
     WindowCornerPreference="Round"
     WindowStartupLocation="CenterScreen"
+    WindowState="Maximized"
     mc:Ignorable="d">
     <Grid>
         <ui:TitleBar
@@ -43,6 +44,10 @@
             MenuItemsSource="{Binding ViewModel.MenuItems, Mode=OneWay}"
             OpenPaneLength="150"
             PaneDisplayMode="Left"
+            ScrollViewer.CanContentScroll="False"
+            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+            ScrollViewer.IsDeferredScrollingEnabled="False"
+            ScrollViewer.VerticalScrollBarVisibility="Disabled"
             TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
             <!--  상단 헤더 삭제  -->
             <!--<ui:NavigationView.Header>

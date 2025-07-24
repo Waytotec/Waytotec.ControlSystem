@@ -111,7 +111,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
 
                     Process.Start(startInfo);
 
-                    ShowNotification($"웹 인터페이스 열기: {url}");
+                    // ShowNotification($"웹 인터페이스 열기: {url}");
                 }
                 catch (Exception ex)
                 {

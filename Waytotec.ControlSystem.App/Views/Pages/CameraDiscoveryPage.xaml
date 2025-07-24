@@ -30,6 +30,10 @@
 
             <!--  불린 반전 컨버터  -->
             <conv:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+
+
+            <!--  GroupBox 콘텐츠 높이 계산 컨버터  -->
+            <conv:GroupBoxContentHeightConverter x:Key="GroupBoxContentHeightConverter" />
         </ResourceDictionary>
     </Page.Resources>
 
@@ -46,8 +50,6 @@
 
         <!--  상단 영역 (고정)  -->
         <StackPanel Grid.Row="0">
-            <!--  Background="Red" 제거  -->
-
             <!--  검색 컨트롤  -->
             <GroupBox Header="검색 옵션" Style="{StaticResource ModernGroupBoxStyle}">
                 <StackPanel>
@@ -188,10 +190,16 @@
             Grid.Row="1"
             Header="검색된 카메라 목록"
             Style="{StaticResource ModernGroupBoxStyle}">
-            <Grid>
+            <Grid
+                MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType={x:Type GroupBox}}, Converter={StaticResource GroupBoxContentHeightConverter}}"
+                Margin="0,0,0,0"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
                 <!--  DataGrid와 진행률 표시를 위한 Grid  -->
                 <DataGrid
                     Name="CameraDataGrid"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
                     AutoGenerateColumns="False"
                     Background="Transparent"
                     BorderThickness="0"
@@ -200,21 +208,23 @@
                     CanUserReorderColumns="True"
                     CanUserResizeColumns="True"
                     CanUserSortColumns="True"
-                    GridLinesVisibility="Horizontal"
+                    GridLinesVisibility="All"
                     HeadersVisibility="Column"
                     HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     IsReadOnly="True"
                     ItemsSource="{Binding CamerasView}"
                     KeyDown="CameraDataGrid_KeyDown"
                     MouseDoubleClick="CameraDataGrid_MouseDoubleClick"
-                    RowHeight="36"
+                    RowHeight="30"
                     ScrollViewer.CanContentScroll="True"
                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
                     ScrollViewer.VerticalScrollBarVisibility="Auto"
                     SelectedItem="{Binding SelectedCamera}"
-                    SelectionMode="Single"
+                    PreviewMouseDown="CameraDataGrid_PreviewMouseDown"
+                    SelectionMode="Extended"
                     SelectionUnit="FullRow"
                     VirtualizingPanel.IsVirtualizing="True"
+                    VirtualizingPanel.ScrollUnit="Pixel"
                     VirtualizingPanel.VirtualizationMode="Recycling">
 
                     <DataGrid.Resources>

@@ -49,7 +49,7 @@ namespace Waytotec.ControlSystem.App.Services
                     _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow
                 )!;
                 _navigationWindow!.ShowWindow();
-                _navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
+                _navigationWindow.Navigate(typeof(Views.Pages.CameraDiscoveryPage));
             }
 
             await Task.CompletedTask;
