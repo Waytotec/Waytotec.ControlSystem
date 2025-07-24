@@ -8,7 +8,7 @@
     xmlns:local="clr-namespace:Waytotec.ControlSystem.App.Views.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Title="카메라 검색"
+    Title="카메라 검색3"
     d:DataContext="{d:DesignInstance local:CameraDiscoveryPage,
                                      IsDesignTimeCreatable=False}"
     d:DesignHeight="700"
@@ -21,7 +21,7 @@
     <Page.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- ModernGroupBox 스타일을 포함하는 ResourceDictionary를 머지 -->
+                <!--  ModernGroupBox 스타일을 포함하는 ResourceDictionary를 머지  -->
                 <ResourceDictionary Source="/Resources/ModernGroupBoxStyle.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
@@ -33,72 +33,20 @@
         </ResourceDictionary>
     </Page.Resources>
 
-    <!-- 전체 컨테이너 - 스크롤 없음 -->
+    <!--  전체 컨테이너 - 스크롤 없음  -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <!--  상단 영역 - Auto로 변경  -->
             <RowDefinition Height="*" />
-            <RowDefinition Height="30" />
+            <!--  중앙 영역 - * 유지  -->
+            <RowDefinition Height="Auto" />
+            <!--  하단 영역 - Auto로 변경  -->
         </Grid.RowDefinitions>
 
-        <!-- 상단 영역 (고정) -->
-        <StackPanel Grid.Row="0" Margin="20,20,20,0">
-            <!--  제목 및 요약 정보  -->
-            <Grid Margin="0,0,0,10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-
-                <GroupBox
-                    Grid.Column="1"
-                    VerticalAlignment="Center"
-                    Header="검색 상태"
-                    Style="{StaticResource CompactGroupBoxStyle}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition />
-                            <RowDefinition />
-                        </Grid.RowDefinitions>
-
-                        <TextBlock
-                            Grid.Row="0"
-                            Grid.Column="0"
-                            Margin="0,0,20,5"
-                            Text="검색된 카메라:" />
-                        <StackPanel
-                            Grid.Row="0"
-                            Grid.Column="1"
-                            Orientation="Horizontal">
-                            <TextBlock
-                                FontSize="20"
-                                FontWeight="Bold"
-                                Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
-                                Text="{Binding DiscoveredCount}" />
-                            <TextBlock
-                                Margin="3,0,0,0"
-                                VerticalAlignment="Bottom"
-                                Text="대" />
-                        </StackPanel>
-
-                        <TextBlock
-                            Grid.Row="1"
-                            Grid.Column="0"
-                            Margin="0,0,20,0"
-                            Text="경과 시간:" />
-                        <TextBlock
-                            Grid.Row="1"
-                            Grid.Column="1"
-                            FontWeight="SemiBold"
-                            Text="{Binding ElapsedTime}" />
-                    </Grid>
-                </GroupBox>
-            </Grid>
+        <!--  상단 영역 (고정)  -->
+        <StackPanel Grid.Row="0">
+            <!--  Background="Red" 제거  -->
 
             <!--  검색 컨트롤  -->
             <GroupBox Header="검색 옵션" Style="{StaticResource ModernGroupBoxStyle}">
@@ -177,25 +125,25 @@
                     <!--  필터 및 검색 설정  -->
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="20" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <!--  필터 영역  -->
                         <GroupBox
                             Grid.Column="0"
-                            Margin="0,0,10,0"
                             Header="필터"
-                            Style="{StaticResource CompactGroupBoxStyle}">
+                            Style="{StaticResource ModernGroupBoxStyle}">
                             <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                                 <ui:TextBox
                                     Width="250"
-                                    Margin="0,0,15,0"
+                                    Margin="0,0,5,0"
                                     PlaceholderText="IP, MAC, 시리얼번호 검색..."
                                     Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
 
                                 <CheckBox
-                                    Margin="0,0,15,0"
+                                    Margin="0,0,5,0"
                                     Content="온라인만 표시"
                                     IsChecked="{Binding ShowOnlineOnly}" />
                                 <CheckBox Content="오프라인만 표시" IsChecked="{Binding ShowOfflineOnly}" />
@@ -204,9 +152,9 @@
 
                         <!--  대역 검색 설정  -->
                         <GroupBox
-                            Grid.Column="1"
+                            Grid.Column="2"
                             Header="대역 설정"
-                            Style="{StaticResource CompactGroupBoxStyle}">
+                            Style="{StaticResource ModernGroupBoxStyle}">
                             <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                                 <TextBlock
                                     Margin="0,0,8,0"
@@ -222,7 +170,7 @@
                                     VerticalAlignment="Center"
                                     Text="/" />
                                 <ui:NumberBox
-                                    Width="60"
+                                    Width="110"
                                     VerticalAlignment="Center"
                                     Maximum="32"
                                     Minimum="8"
@@ -235,10 +183,9 @@
             </GroupBox>
         </StackPanel>
 
-        <!-- 중앙 영역 - 카메라 목록 (스크롤 가능) -->
+        <!--  중앙 영역 - 카메라 목록 (스크롤 가능)  -->
         <GroupBox
             Grid.Row="1"
-            Margin="20,10,20,10"
             Header="검색된 카메라 목록"
             Style="{StaticResource ModernGroupBoxStyle}">
             <Grid>
@@ -472,20 +419,56 @@
         </GroupBox>
 
         <!--  하단 상태바 (고정)  -->
-        <Border
+        <GroupBox
             Grid.Row="2"
-            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-            BorderBrush="{DynamicResource ControlElevationBorderBrush}"
-            BorderThickness="0,1,0,0">
+            Header="상태 메세지"
+            Style="{StaticResource ModernGroupBoxStyle}">
             <Grid Margin="20,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30" />
+                    <RowDefinition Height="30" />
+                </Grid.RowDefinitions>
 
                 <!--  상태 메시지  -->
+                <Grid Grid.Row="0" Grid.Column="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="20" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Grid.Column="0"
+                        Margin="0,0,20,0"
+                        Text="검색된 카메라:" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <TextBlock
+                            FontSize="16"
+                            FontWeight="Bold"
+                            Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                            Text="{Binding DiscoveredCount}" />
+                        <TextBlock Margin="3,0,0,0" Text="대" />
+                    </StackPanel>
+
+                    <TextBlock
+                        Grid.Column="3"
+                        Margin="0,0,20,0"
+                        Text="경과 시간:" />
+                    <TextBlock
+                        Grid.Column="4"
+                        FontWeight="SemiBold"
+                        Text="{Binding ElapsedTime}" />
+                </Grid>
                 <StackPanel
+                    Grid.Row="1"
                     Grid.Column="0"
+                    Grid.ColumnSpan="2"
                     VerticalAlignment="Center"
                     Orientation="Horizontal">
                     <ui:SymbolIcon
@@ -497,9 +480,9 @@
                         FontWeight="Medium"
                         Text="{Binding StatusMessage}" />
                 </StackPanel>
-
                 <!--  선택된 카메라 정보  -->
                 <Border
+                    Grid.Row="0"
                     Grid.Column="1"
                     Padding="15,5"
                     Background="{DynamicResource SubtleFillColorSecondaryBrush}"
@@ -525,6 +508,6 @@
                     </StackPanel>
                 </Border>
             </Grid>
-        </Border>
+        </GroupBox>
     </Grid>
 </Page>
