@@ -172,7 +172,7 @@
                                     VerticalAlignment="Center"
                                     Text="/" />
                                 <ui:NumberBox
-                                    Width="110"
+                                    Width="130"
                                     VerticalAlignment="Center"
                                     Maximum="32"
                                     Minimum="8"
@@ -215,12 +215,12 @@
                     ItemsSource="{Binding CamerasView}"
                     KeyDown="CameraDataGrid_KeyDown"
                     MouseDoubleClick="CameraDataGrid_MouseDoubleClick"
+                    PreviewMouseDown="CameraDataGrid_PreviewMouseDown"
                     RowHeight="30"
                     ScrollViewer.CanContentScroll="True"
                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
                     ScrollViewer.VerticalScrollBarVisibility="Auto"
                     SelectedItem="{Binding SelectedCamera}"
-                    PreviewMouseDown="CameraDataGrid_PreviewMouseDown"
                     SelectionMode="Extended"
                     SelectionUnit="FullRow"
                     VirtualizingPanel.IsVirtualizing="True"
