@@ -214,6 +214,7 @@
                     IsReadOnly="True"
                     ItemsSource="{Binding CamerasView}"
                     KeyDown="CameraDataGrid_KeyDown"
+                    LoadingRow="CameraDataGrid_LoadingRow"
                     MouseDoubleClick="CameraDataGrid_MouseDoubleClick"
                     PreviewMouseDown="CameraDataGrid_PreviewMouseDown"
                     RowHeight="30"
@@ -239,93 +240,103 @@
                     </DataGrid.Resources>
 
                     <DataGrid.Columns>
-                        <!--  상태 표시  -->
-                        <DataGridTemplateColumn
-                            Width="70"
-                            CanUserSort="True"
-                            Header="상태"
-                            SortMemberPath="Status">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Grid>
-                                        <Ellipse
-                                            Width="12"
-                                            Height="12"
-                                            HorizontalAlignment="Center"
-                                            Fill="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
-                                            ToolTip="{Binding StatusText}" />
-                                    </Grid>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <!--  ID 컬럼 (순번) - 새로 추가  -->
+                        <DataGridTextColumn
+                            Width="50"
+                            Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Header}"
+                            CanUserSort="False"
+                            Header="ID"
+                            IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="FontWeight" Value="Medium" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
                         <!--  IP 주소  -->
                         <DataGridTextColumn
                             Width="130"
                             Binding="{Binding IpAddressString}"
                             CanUserSort="True"
-                            Header="IP 주소" />
+                            Header="IP">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
                         <!--  MAC 주소  -->
                         <DataGridTextColumn
                             Width="150"
                             Binding="{Binding FormattedMacAddress}"
                             CanUserSort="True"
-                            Header="MAC 주소" />
+                            Header="MAC">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="FontFamily" Value="Consolas, Courier New" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
                         <!--  시리얼 번호  -->
                         <DataGridTextColumn
-                            Width="140"
+                            Width="120"
                             Binding="{Binding SerialNumber}"
                             CanUserSort="True"
-                            Header="시리얼 번호" />
+                            Header="SN">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="FontFamily" Value="Consolas, Courier New" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
                         <!--  버전  -->
                         <DataGridTextColumn
-                            Width="100"
+                            Width="120"
                             Binding="{Binding Version}"
                             CanUserSort="True"
-                            Header="버전" />
+                            Header="Version">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
-                        <!--  포트 정보  -->
+                        <!--  상태 - 마지막으로 이동  -->
                         <DataGridTemplateColumn
-                            Width="180"
-                            CanUserSort="False"
-                            Header="포트 정보">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock VerticalAlignment="Center">
-                                        <Run FontWeight="Medium" Text="HTTP:" />
-                                        <Run Text="{Binding HttpPort}" />
-                                        <Run FontWeight="Medium" Text="  RTSP:" />
-                                        <Run Text="{Binding RtspPort}" />
-                                    </TextBlock>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-
-                        <!--  마지막 확인  -->
-                        <DataGridTextColumn
-                            Width="140"
-                            Binding="{Binding LastSeenText}"
+                            Width="100"
                             CanUserSort="True"
-                            Header="마지막 확인"
-                            SortMemberPath="LastSeen" />
-
-                        <!--  네트워크 정보  -->
-                        <DataGridTemplateColumn
-                            Width="*"
-                            MinWidth="200"
-                            CanUserSort="False"
-                            Header="네트워크 정보">
+                            Header="Status"
+                            SortMemberPath="Status">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock VerticalAlignment="Center">
-                                        <Run FontWeight="Medium" Text="서브넷:" />
-                                        <Run Text="{Binding SubnetMask}" />
-                                        <Run FontWeight="Medium" Text="  게이트웨이:" />
-                                        <Run Text="{Binding Gateway}" />
-                                    </TextBlock>
+                                    <Grid HorizontalAlignment="Center">
+                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                            <Ellipse
+                                                Width="10"
+                                                Height="10"
+                                                Margin="0,0,5,0"
+                                                VerticalAlignment="Center"
+                                                Fill="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
+                                                ToolTip="{Binding StatusText}" />
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                FontSize="11"
+                                                Text="{Binding StatusText}" />
+                                        </StackPanel>
+                                    </Grid>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

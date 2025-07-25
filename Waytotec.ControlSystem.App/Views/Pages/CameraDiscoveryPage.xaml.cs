@@ -147,6 +147,35 @@ namespace Waytotec.ControlSystem.App.Views.Pages
 
             return child;
         }
+        /// <summary>
+        /// DataGrid 행 로딩 시 행 번호 설정
+        /// </summary>
+        private void CameraDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            // 행 번호를 1부터 시작하도록 설정
+            e.Row.Header = (e.Row.GetIndex() + 1).ToString();
+        }
+
+        /// <summary>
+        /// DataGrid 행 언로딩 시 정리
+        /// </summary>
+        private void CameraDataGrid_UnloadingRow(object sender, DataGridRowEventArgs e)
+        {
+            // 행 번호 정리 (필요시)
+        }
+
+        /// <summary>
+        /// 선택된 행 변경 시 처리
+        /// </summary>
+        private void CameraDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // 선택된 카메라 정보 업데이트 (ViewModel에서 처리되지만 추가 로직 필요시 사용)
+            if (ViewModel.SelectedCamera != null)
+            {
+                // 선택된 카메라에 대한 추가 처리
+                Debug.WriteLine($"선택된 카메라: {ViewModel.SelectedCamera.IpAddressString}");
+            }
+        }
 
         private void CameraDataGrid_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {

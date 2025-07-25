@@ -178,7 +178,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             if (_isInitialized)
                 return;
 
-            await Task.Delay(5000); // 실제 장비 상태 가져오는 시뮬레이션
+            // await Task.Delay(5000); // 실제 장비 상태 가져오는 시뮬레이션
 
             var statuses = await _deviceService.GetAllStatusesAsync();
             Devices.Clear();
