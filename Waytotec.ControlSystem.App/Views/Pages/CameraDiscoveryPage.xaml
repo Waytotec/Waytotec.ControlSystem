@@ -222,14 +222,131 @@
                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
                     ScrollViewer.VerticalScrollBarVisibility="Auto"
                     SelectedItem="{Binding SelectedCamera}"
+                    SelectionChanged="CameraDataGrid_SelectionChanged"
                     SelectionMode="Extended"
                     SelectionUnit="FullRow"
+                    UnloadingRow="CameraDataGrid_UnloadingRow"
                     VirtualizingPanel.IsVirtualizing="True"
                     VirtualizingPanel.ScrollUnit="Pixel"
                     VirtualizingPanel.VirtualizationMode="Recycling">
 
+                    <DataGrid.Resources>
+                        <!--  체크박스 컬럼을 위한 스타일  -->
+                        <Style x:Key="CenterCheckBox" TargetType="CheckBox">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="IsTabStop" Value="False" />
+                        </Style>
+
+                        <!--  개선된 컬럼 헤더 스타일  -->
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                            <Setter Property="BorderThickness" Value="0,0,1,1" />
+                            <Setter Property="Padding" Value="8,6" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                            <Setter Property="FontSize" Value="12" />
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                                    <Setter Property="Cursor" Value="Hand" />
+                                </Trigger>
+                                <Trigger Property="SortDirection" Value="Ascending">
+                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="SortDirection" Value="Descending">
+                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+
+                        <!--  개선된 행 스타일 - 다중 선택 시각적 피드백  -->
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Margin" Value="0,0,0,1" />
+                            <Style.Triggers>
+                                <!--  마우스 오버 효과  -->
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                    <Setter Property="BorderThickness" Value="1,0,1,0" />
+                                </Trigger>
+                                <!--  선택된 행 강조  -->
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                    <Setter Property="BorderThickness" Value="2,0,2,0" />
+                                </Trigger>
+                                <!--  포커스된 행  -->
+                                <Trigger Property="IsFocused" Value="True">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                    <Setter Property="BorderThickness" Value="1" />
+                                </Trigger>
+                                <!--  선택된 행에 마우스 오버  -->
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsSelected" Value="True" />
+                                        <Condition Property="IsMouseOver" Value="True" />
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorTertiaryBrush}" />
+                                    <Setter Property="BorderThickness" Value="2,0,2,0" />
+                                </MultiTrigger>
+                            </Style.Triggers>
+                        </Style>
+
+                        <!--  셀 스타일 개선  -->
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Padding" Value="8,4" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                </Trigger>
+                                <Trigger Property="IsFocused" Value="True">
+                                    <Setter Property="BorderThickness" Value="0" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.Resources>
+
                     <!--  기존 DataGrid.Columns를 다음과 같이 수정 - 정렬 최적화 적용  -->
                     <DataGrid.Columns>
+                        <!--  체크박스 컬럼 (다중 선택용) - 새로 추가  -->
+                        <DataGridTemplateColumn
+                            Width="40"
+                            CanUserSort="False"
+                            Header="☐">
+                            <DataGridTemplateColumn.HeaderTemplate>
+                                <DataTemplate>
+                                    <CheckBox
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Command="{Binding DataContext.SelectAllCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        IsChecked="{Binding DataContext.IsAllSelected, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        Style="{StaticResource CenterCheckBox}"
+                                        ToolTip="모두 선택/해제" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.HeaderTemplate>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox
+                                        Click="CheckBox_Click"
+                                        IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                        Style="{StaticResource CenterCheckBox}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
                         <!--  ID 컬럼 (순번) - 정렬 비활성화  -->
                         <DataGridTextColumn
                             Width="50"
@@ -343,50 +460,6 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
-
-                    <!--  정렬 시각적 피드백을 위한 DataGrid 스타일 추가  -->
-                    <DataGrid.Resources>
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
-                            <Setter Property="BorderThickness" Value="0,0,1,1" />
-                            <Setter Property="Padding" Value="12,8" />
-                            <Setter Property="FontWeight" Value="SemiBold" />
-                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                            <Style.Triggers>
-                                <!--  호버 효과  -->
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
-                                    <Setter Property="Cursor" Value="Hand" />
-                                </Trigger>
-                                <!--  정렬 중일 때 효과  -->
-                                <Trigger Property="SortDirection" Value="Ascending">
-                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
-                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-                                </Trigger>
-                                <Trigger Property="SortDirection" Value="Descending">
-                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
-                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-
-                        <!--  정렬된 행 하이라이트  -->
-                        <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="Transparent" />
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                                </Trigger>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
-                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGrid.Resources>
 
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">

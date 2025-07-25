@@ -21,6 +21,25 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         private bool _disposed = false;
         private readonly Random _random = new();
 
+
+        // 다중 선택을 위한 추가 속성들
+        [ObservableProperty]
+        private ObservableCollection<DiscoveredCamera> _selectedCameras = new();
+
+        [ObservableProperty]
+        private int _selectedCount = 0;
+
+        [ObservableProperty]
+        private bool _isAllSelected = false;
+
+        // 다중 선택 관련 명령들
+        public IRelayCommand SelectAllCommand { get; }
+        public IRelayCommand UnselectAllCommand { get; }
+        public IRelayCommand InvertSelectionCommand { get; }
+        public IAsyncRelayCommand RefreshSelectedCamerasCommand { get; }
+        public IRelayCommand CopySelectedToClipboardCommand { get; }
+        public IRelayCommand ExportSelectedCommand { get; }
+
         [ObservableProperty]
         private ObservableCollection<DiscoveredCamera> _cameras = new();
 
@@ -116,10 +135,31 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             FilterCommand = new RelayCommand(ApplyFilter);
             GenerateTestDataCommand = new AsyncRelayCommand(GenerateTestDataAsync, () => !IsScanning);
 
+            // 다중 선택 명령 초기화 추가
+            SelectAllCommand = new RelayCommand(SelectAll, () => !IsScanning && Cameras.Count > 0);
+            UnselectAllCommand = new RelayCommand(UnselectAll, () => SelectedCameras.Count > 0);
+            InvertSelectionCommand = new RelayCommand(InvertSelection, () => !IsScanning && Cameras.Count > 0);
+            RefreshSelectedCamerasCommand = new AsyncRelayCommand(RefreshSelectedCamerasAsync, () => SelectedCameras.Count > 0 && !IsScanning);
+            CopySelectedToClipboardCommand = new RelayCommand(CopySelectedToClipboard, () => SelectedCameras.Count > 0);
+            ExportSelectedCommand = new RelayCommand(ExportSelectedToFile, () => SelectedCameras.Count > 0);
+
             // 이벤트 구독
             _discoveryService.CameraDiscovered += OnCameraDiscovered;
             _discoveryService.DiscoveryProgress += OnDiscoveryProgress;
             _discoveryService.DiscoveryCompleted += OnDiscoveryCompleted;
+
+            // SelectedCameras 컬렉션 변경 이벤트 구독
+            SelectedCameras.CollectionChanged += (s, e) =>
+            {
+                SelectedCount = SelectedCameras.Count;
+                IsAllSelected = SelectedCameras.Count == Cameras.Count && Cameras.Count > 0;
+
+                // 명령 실행 가능 상태 업데이트
+                UnselectAllCommand.NotifyCanExecuteChanged();
+                RefreshSelectedCamerasCommand.NotifyCanExecuteChanged();
+                CopySelectedToClipboardCommand.NotifyCanExecuteChanged();
+                ExportSelectedCommand.NotifyCanExecuteChanged();
+            };
 
             // 속성 변경 감지
             PropertyChanged += OnPropertyChanged;
@@ -513,6 +553,170 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             var endBytes = BitConverter.GetBytes(broadcastIp - 1).Reverse().ToArray();
 
             return (new IPAddress(startBytes), new IPAddress(endBytes));
+        }
+
+
+        /// <summary>
+        /// 모두 선택
+        /// </summary>
+        private void SelectAll()
+        {
+            SelectedCameras.Clear();
+            foreach (var camera in Cameras)
+            {
+                SelectedCameras.Add(camera);
+            }
+        }
+
+        /// <summary>
+        /// 모두 선택 해제
+        /// </summary>
+        private void UnselectAll()
+        {
+            SelectedCameras.Clear();
+            SelectedCamera = null;
+        }
+
+        /// <summary>
+        /// 선택 반전
+        /// </summary>
+        private void InvertSelection()
+        {
+            var camerasToAdd = Cameras.Except(SelectedCameras).ToList();
+            var camerasToRemove = SelectedCameras.ToList();
+
+            foreach (var camera in camerasToRemove)
+            {
+                SelectedCameras.Remove(camera);
+            }
+
+            foreach (var camera in camerasToAdd)
+            {
+                SelectedCameras.Add(camera);
+            }
+        }
+
+        /// <summary>
+        /// 선택된 카메라들 새로고침
+        /// </summary>
+        private async Task RefreshSelectedCamerasAsync()
+        {
+            if (SelectedCameras.Count == 0) return;
+
+            try
+            {
+                IsScanning = true;
+                StatusMessage = $"선택된 {SelectedCameras.Count}대 카메라 새로고침 중...";
+
+                var refreshTasks = SelectedCameras.Select(async camera =>
+                {
+                    try
+                    {
+                        var refreshedCamera = await _discoveryService.VerifyCameraAsync(
+                            camera.IpAddress, CancellationToken.None);
+
+                        if (refreshedCamera != null)
+                        {
+                            camera.Status = refreshedCamera.Status;
+                            camera.Version = refreshedCamera.Version;
+                            camera.LastSeen = refreshedCamera.LastSeen;
+                        }
+                        else
+                        {
+                            camera.Status = CameraStatus.Offline;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[CameraDiscovery] 카메라 새로고침 오류 ({camera.IpAddressString}): {ex.Message}");
+                        camera.Status = CameraStatus.Error;
+                    }
+                });
+
+                await Task.WhenAll(refreshTasks);
+                StatusMessage = $"선택된 카메라 새로고침 완료";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"새로고침 오류: {ex.Message}";
+                Debug.WriteLine($"[CameraDiscovery] 다중 새로고침 오류: {ex}");
+            }
+            finally
+            {
+                IsScanning = false;
+            }
+        }
+
+
+        /// <summary>
+        /// 선택된 카메라들 클립보드에 복사
+        /// </summary>
+        private void CopySelectedToClipboard()
+        {
+            if (SelectedCameras.Count == 0) return;
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"선택된 카메라 정보 ({SelectedCameras.Count}대)");
+            sb.AppendLine(new string('=', 50));
+
+            foreach (var camera in SelectedCameras)
+            {
+                sb.AppendLine($"IP: {camera.IpAddressString}");
+                sb.AppendLine($"MAC: {camera.FormattedMacAddress}");
+                sb.AppendLine($"시리얼: {camera.SerialNumber}");
+                sb.AppendLine($"버전: {camera.Version}");
+                sb.AppendLine($"상태: {camera.StatusText}");
+                sb.AppendLine(new string('-', 30));
+            }
+
+            try
+            {
+                Clipboard.SetText(sb.ToString());
+                StatusMessage = $"선택된 {SelectedCameras.Count}대 카메라 정보를 클립보드에 복사했습니다.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"클립보드 복사 오류: {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// 선택된 카메라들만 파일로 내보내기
+        /// </summary>
+        private void ExportSelectedToFile()
+        {
+            if (SelectedCameras.Count == 0) return;
+
+            try
+            {
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "CSV 파일 (*.csv)|*.csv|텍스트 파일 (*.txt)|*.txt",
+                    DefaultExt = "csv",
+                    FileName = $"SelectedCameras_{DateTime.Now:yyyyMMdd_HHmmss}"
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    var sb = new StringBuilder();
+                    sb.AppendLine("ID,IP주소,MAC주소,시리얼번호,버전,상태,마지막확인,HTTP포트,RTSP포트");
+
+                    foreach (var camera in SelectedCameras)
+                    {
+                        sb.AppendLine($"{camera.Id},{camera.IpAddressString},{camera.FormattedMacAddress}," +
+                                     $"{camera.SerialNumber},{camera.Version},{camera.StatusText}," +
+                                     $"{camera.LastSeen:yyyy-MM-dd HH:mm:ss},{camera.HttpPort},{camera.RtspPort}");
+                    }
+
+                    File.WriteAllText(saveFileDialog.FileName, sb.ToString(), Encoding.UTF8);
+                    StatusMessage = $"선택된 카메라 목록 저장 완료: {Path.GetFileName(saveFileDialog.FileName)}";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"파일 저장 오류: {ex.Message}";
+                Debug.WriteLine($"[CameraDiscovery] 선택된 카메라 파일 저장 오류: {ex}");
+            }
         }
 
         /// <summary>
