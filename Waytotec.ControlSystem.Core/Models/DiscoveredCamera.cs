@@ -113,6 +113,39 @@ namespace Waytotec.ControlSystem.Core.Models
             }
         }
 
+        /// <summary>
+        /// IP 주소를 숫자 형태로 변환한 값 (정렬용)
+        /// </summary>
+        public uint IpAddressAsUInt
+        {
+            get
+            {
+                if (IpAddress == null || IpAddress.Equals(IPAddress.None))
+                    return 0;
+
+                var bytes = IpAddress.GetAddressBytes();
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(bytes);
+                return BitConverter.ToUInt32(bytes, 0);
+            }
+        }
+
+        /// <summary>
+        /// IP 주소를 정렬 가능한 문자열로 변환 (각 옥텟을 3자리로 패딩)
+        /// 예: "192.168.001.007", "192.168.001.100"
+        /// </summary>
+        public string IpAddressForSorting
+        {
+            get
+            {
+                if (IpAddress == null || IpAddress.Equals(IPAddress.None))
+                    return "000.000.000.000";
+
+                var parts = IpAddress.ToString().Split('.');
+                return string.Join(".", parts.Select(p => p.PadLeft(3, '0')));
+            }
+        }
+
         // 네트워크 정보
         public IPAddress SubnetMask { get; set; } = IPAddress.None;
         public IPAddress Gateway { get; set; } = IPAddress.None;

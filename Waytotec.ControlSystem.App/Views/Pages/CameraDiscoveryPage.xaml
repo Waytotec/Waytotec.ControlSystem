@@ -228,19 +228,9 @@
                     VirtualizingPanel.ScrollUnit="Pixel"
                     VirtualizingPanel.VirtualizationMode="Recycling">
 
-                    <DataGrid.Resources>
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
-                            <Setter Property="BorderThickness" Value="0,0,1,1" />
-                            <Setter Property="Padding" Value="12,8" />
-                            <Setter Property="FontWeight" Value="SemiBold" />
-                        </Style>
-                    </DataGrid.Resources>
-
+                    <!--  기존 DataGrid.Columns를 다음과 같이 수정 - 정렬 최적화 적용  -->
                     <DataGrid.Columns>
-                        <!--  ID 컬럼 (순번) - 새로 추가  -->
+                        <!--  ID 컬럼 (순번) - 정렬 비활성화  -->
                         <DataGridTextColumn
                             Width="50"
                             Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Header}"
@@ -252,69 +242,80 @@
                                     <Setter Property="HorizontalAlignment" Value="Center" />
                                     <Setter Property="VerticalAlignment" Value="Center" />
                                     <Setter Property="FontWeight" Value="Medium" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <!--  IP 주소  -->
+                        <!--  IP 주소 - IP 정렬 최적화  -->
                         <DataGridTextColumn
                             Width="130"
                             Binding="{Binding IpAddressString}"
                             CanUserSort="True"
-                            Header="IP">
+                            Header="IP"
+                            SortMemberPath="IpAddressAsUInt">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center" />
                                     <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="FontFamily" Value="Consolas, Courier New" />
+                                    <Setter Property="FontSize" Value="12" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <!--  MAC 주소  -->
+                        <!--  MAC 주소 - MAC 정렬 최적화  -->
                         <DataGridTextColumn
                             Width="150"
                             Binding="{Binding FormattedMacAddress}"
                             CanUserSort="True"
-                            Header="MAC">
+                            Header="MAC"
+                            SortMemberPath="MacAddress">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center" />
                                     <Setter Property="VerticalAlignment" Value="Center" />
                                     <Setter Property="FontFamily" Value="Consolas, Courier New" />
+                                    <Setter Property="FontSize" Value="12" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <!--  시리얼 번호  -->
+                        <!--  시리얼 번호 - 영숫자 정렬  -->
                         <DataGridTextColumn
                             Width="120"
                             Binding="{Binding SerialNumber}"
                             CanUserSort="True"
-                            Header="SN">
+                            Header="SN"
+                            SortMemberPath="SerialNumber">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center" />
                                     <Setter Property="VerticalAlignment" Value="Center" />
                                     <Setter Property="FontFamily" Value="Consolas, Courier New" />
+                                    <Setter Property="FontSize" Value="12" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <!--  버전  -->
+                        <!--  버전 - 버전 비교 정렬 최적화  -->
                         <DataGridTextColumn
                             Width="120"
                             Binding="{Binding Version}"
                             CanUserSort="True"
-                            Header="Version">
+                            Header="Version"
+                            SortMemberPath="Version">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center" />
                                     <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="FontFamily" Value="Consolas, Courier New" />
+                                    <Setter Property="FontSize" Value="12" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
 
-                        <!--  상태 - 마지막으로 이동  -->
+                        <!--  상태 - 열거형 정렬 최적화  -->
                         <DataGridTemplateColumn
                             Width="100"
                             CanUserSort="True"
@@ -334,6 +335,7 @@
                                             <TextBlock
                                                 VerticalAlignment="Center"
                                                 FontSize="11"
+                                                FontWeight="Medium"
                                                 Text="{Binding StatusText}" />
                                         </StackPanel>
                                     </Grid>
@@ -341,6 +343,50 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
+
+                    <!--  정렬 시각적 피드백을 위한 DataGrid 스타일 추가  -->
+                    <DataGrid.Resources>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                            <Setter Property="BorderThickness" Value="0,0,1,1" />
+                            <Setter Property="Padding" Value="12,8" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Style.Triggers>
+                                <!--  호버 효과  -->
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                                    <Setter Property="Cursor" Value="Hand" />
+                                </Trigger>
+                                <!--  정렬 중일 때 효과  -->
+                                <Trigger Property="SortDirection" Value="Ascending">
+                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="SortDirection" Value="Descending">
+                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+
+                        <!--  정렬된 행 하이라이트  -->
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.Resources>
 
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
