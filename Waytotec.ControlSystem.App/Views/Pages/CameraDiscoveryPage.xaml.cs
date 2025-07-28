@@ -128,7 +128,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         private void CameraDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // SelectedItems와 ViewModel의 SelectedCameras 동기화
-            if (sender is DataGrid dataGrid)
+                if (sender is DataGrid dataGrid)
             {
                 // 추가된 항목들
                 foreach (DiscoveredCamera camera in e.AddedItems)
@@ -287,76 +287,27 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         }
 
         private void CameraDataGrid_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            var dataGrid = sender as DataGrid;
-            if (dataGrid == null) return;
+         {
+            // 불필요한 커스텀 선택 로직 제거
+            // DataGrid의 기본 선택 동작을 그대로 사용
+            // 특별한 동작이 필요 없다면 이 메서드는 비워두거나 삭제해도 됩니다.
+            //var dataGrid = sender as DataGrid;
+            //if (dataGrid == null) return;
 
-            // 우클릭인 경우에만 처리
-            if (e.RightButton == System.Windows.Input.MouseButtonState.Pressed)
-            {
-                var selectedCamera = FindCameraFromMousePosition(dataGrid, e);
+            //// 클릭 위치에서 DataGridRow 찾기
+            //DependencyObject dep = (DependencyObject)e.OriginalSource;
+            //while (dep != null && !(dep is DataGridRow))
+            //    dep = VisualTreeHelper.GetParent(dep);
 
-                if (selectedCamera != null)
-                {
-                    // 우클릭한 행이 선택되지 않은 경우에만 선택
-                    if (!ViewModel.SelectedCameras.Contains(selectedCamera))
-                    {
-                        // 현재 선택을 유지하면서 새로운 항목 추가 (Ctrl 효과)
-                        if (Keyboard.Modifiers != ModifierKeys.Control)
-                        {
-                            dataGrid.SelectedItems.Clear();
-                            ViewModel.SelectedCameras.Clear();
-                        }
-
-                        dataGrid.SelectedItems.Add(selectedCamera);
-                        if (!ViewModel.SelectedCameras.Contains(selectedCamera))
-                        {
-                            ViewModel.SelectedCameras.Add(selectedCamera);
-                        }
-                    }
-                }
-            }
-            // 일반 클릭인 경우 (Row/Column 사이 클릭 문제 해결)
-            else if (e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
-            {
-                var selectedCamera = FindCameraFromMousePosition(dataGrid, e);
-
-                if (selectedCamera != null)
-                {
-                    // 일반 클릭 시 해당 행 선택
-                    if (Keyboard.Modifiers == ModifierKeys.Control)
-                    {
-                        // Ctrl 클릭: 토글 선택
-                        if (dataGrid.SelectedItems.Contains(selectedCamera))
-                        {
-                            dataGrid.SelectedItems.Remove(selectedCamera);
-                            ViewModel.SelectedCameras.Remove(selectedCamera);
-                        }
-                        else
-                        {
-                            dataGrid.SelectedItems.Add(selectedCamera);
-                            if (!ViewModel.SelectedCameras.Contains(selectedCamera))
-                            {
-                                ViewModel.SelectedCameras.Add(selectedCamera);
-                            }
-                        }
-                    }
-                    else if (Keyboard.Modifiers == ModifierKeys.Shift && dataGrid.SelectedItems.Count > 0)
-                    {
-                        // Shift 클릭: 범위 선택
-                        HandleShiftSelection(dataGrid, selectedCamera);
-                    }
-                    else
-                    {
-                        // 일반 클릭: 단일 선택
-                        dataGrid.SelectedItems.Clear();
-                        ViewModel.SelectedCameras.Clear();
-                        dataGrid.SelectedItems.Add(selectedCamera);
-                        ViewModel.SelectedCameras.Add(selectedCamera);
-                        ViewModel.SelectedCamera = selectedCamera;
-                    }
-                }
-            }
+            //if (dep is DataGridRow row)
+            //{
+            //    // 행이 선택되지 않았다면 선택
+            //    if (!row.IsSelected)
+            //    {
+            //        row.IsSelected = true;
+            //        dataGrid.SelectedItem = row.Item;
+            //    }
+            //}
         }
 
 

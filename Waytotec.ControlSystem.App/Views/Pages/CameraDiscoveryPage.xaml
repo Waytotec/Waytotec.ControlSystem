@@ -119,7 +119,7 @@
                             Margin="0,0,10,10"
                             Padding="12,8"
                             Appearance="Secondary"
-                            Command="{Binding ExportCommand}"
+                            Command="{Binding ExportSelectedCommand}"
                             Content="내보내기"
                             Icon="{ui:SymbolIcon DocumentArrowDown24}" />
                     </WrapPanel>
@@ -192,14 +192,11 @@
             Style="{StaticResource ModernGroupBoxStyle}">
             <Grid
                 MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType={x:Type GroupBox}}, Converter={StaticResource GroupBoxContentHeightConverter}}"
-                Margin="0,0,0,0"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch">
                 <!--  DataGrid와 진행률 표시를 위한 Grid  -->
                 <DataGrid
                     Name="CameraDataGrid"
-                    HorizontalAlignment="Stretch"
-                    VerticalAlignment="Stretch"
                     AutoGenerateColumns="False"
                     Background="Transparent"
                     BorderThickness="0"
@@ -207,9 +204,10 @@
                     CanUserDeleteRows="False"
                     CanUserReorderColumns="True"
                     CanUserResizeColumns="True"
-                    CanUserSortColumns="True"
-                    GridLinesVisibility="All"
+                    CanUserSortColumns="True"                    
                     HeadersVisibility="Column"
+                    GridLinesVisibility="Horizontal"
+                    VerticalAlignment="Center"                    
                     HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     IsReadOnly="True"
                     ItemsSource="{Binding CamerasView}"
@@ -217,7 +215,7 @@
                     LoadingRow="CameraDataGrid_LoadingRow"
                     MouseDoubleClick="CameraDataGrid_MouseDoubleClick"
                     PreviewMouseDown="CameraDataGrid_PreviewMouseDown"
-                    RowHeight="30"
+                    RowHeight="25"
                     ScrollViewer.CanContentScroll="True"
                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
                     ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -265,56 +263,18 @@
                             </Style.Triggers>
                         </Style>
 
-                        <!--  개선된 행 스타일 - 다중 선택 시각적 피드백  -->
-                        <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="Transparent" />
-                            <Setter Property="BorderThickness" Value="0" />
-                            <Setter Property="Margin" Value="0,0,0,1" />
-                            <Style.Triggers>
-                                <!--  마우스 오버 효과  -->
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                                    <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
-                                    <Setter Property="BorderThickness" Value="1,0,1,0" />
-                                </Trigger>
-                                <!--  선택된 행 강조  -->
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
-                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-                                    <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
-                                    <Setter Property="BorderThickness" Value="2,0,2,0" />
-                                </Trigger>
-                                <!--  포커스된 행  -->
-                                <Trigger Property="IsFocused" Value="True">
-                                    <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
-                                    <Setter Property="BorderThickness" Value="1" />
-                                </Trigger>
-                                <!--  선택된 행에 마우스 오버  -->
-                                <MultiTrigger>
-                                    <MultiTrigger.Conditions>
-                                        <Condition Property="IsSelected" Value="True" />
-                                        <Condition Property="IsMouseOver" Value="True" />
-                                    </MultiTrigger.Conditions>
-                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorTertiaryBrush}" />
-                                    <Setter Property="BorderThickness" Value="2,0,2,0" />
-                                </MultiTrigger>
-                            </Style.Triggers>
-                        </Style>
-
                         <!--  셀 스타일 개선  -->
                         <Style TargetType="DataGridCell">
-                            <Setter Property="BorderThickness" Value="0" />
-                            <Setter Property="Padding" Value="4,4" />
-                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <!--<Setter Property="Padding" Value="4,4" />-->
+                            <!--<Setter Property="VerticalAlignment" Value="Center" />-->
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
                                     <Setter Property="Background" Value="Transparent" />
-                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />                                    
                                 </Trigger>
-                                <Trigger Property="IsFocused" Value="True">
+                                <!--<Trigger Property="IsFocused" Value="True">
                                     <Setter Property="BorderThickness" Value="0" />
-                                </Trigger>
+                                </Trigger>-->
                             </Style.Triggers>
                         </Style>
                     </DataGrid.Resources>
@@ -325,6 +285,7 @@
                         <DataGridTemplateColumn
                             Width="40"
                             CanUserSort="False"
+                            Visibility="Hidden"
                             Header="☐">
                             <DataGridTemplateColumn.HeaderTemplate>
                                 <DataTemplate>
@@ -358,7 +319,8 @@
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center" />
                                     <Setter Property="VerticalAlignment" Value="Center" />
-                                    <Setter Property="FontWeight" Value="Regular" />
+                                    <Setter Property="FontFamily" Value="맑은 고딕" />
+                                    <Setter Property="FontSize" Value="13" />
                                     <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
@@ -366,7 +328,7 @@
 
                         <!--  IP 주소 - IP 정렬 최적화  -->
                         <DataGridTextColumn
-                            Width="130"
+                            Width="180"
                             Binding="{Binding IpAddressString}"
                             CanUserSort="True"
                             Header="IP"
@@ -375,7 +337,7 @@
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center" />
                                     <Setter Property="VerticalAlignment" Value="Center" />
-                                    <Setter Property="FontFamily" Value="Consolas, Courier New" />
+                                    <Setter Property="FontFamily" Value="맑은 고딕" />
                                     <Setter Property="FontSize" Value="13" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
@@ -383,7 +345,7 @@
 
                         <!--  MAC 주소 - MAC 정렬 최적화  -->
                         <DataGridTextColumn
-                            Width="150"
+                            Width="200"
                             Binding="{Binding FormattedMacAddress}"
                             CanUserSort="True"
                             Header="MAC"
@@ -392,7 +354,7 @@
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center" />
                                     <Setter Property="VerticalAlignment" Value="Center" />
-                                    <Setter Property="FontFamily" Value="Consolas, Courier New" />
+                                    <Setter Property="FontFamily" Value="맑은 고딕" />
                                     <Setter Property="FontSize" Value="13" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
@@ -400,7 +362,7 @@
 
                         <!--  시리얼 번호 - 영숫자 정렬  -->
                         <DataGridTextColumn
-                            Width="120"
+                            Width="150"
                             Binding="{Binding SerialNumber}"
                             CanUserSort="True"
                             Header="SN"
@@ -409,7 +371,7 @@
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center" />
                                     <Setter Property="VerticalAlignment" Value="Center" />
-                                    <Setter Property="FontFamily" Value="Consolas, Courier New" />
+                                    <Setter Property="FontFamily" Value="맑은 고딕" />
                                     <Setter Property="FontSize" Value="13" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
@@ -417,7 +379,7 @@
 
                         <!--  버전 - 버전 비교 정렬 최적화  -->
                         <DataGridTextColumn
-                            Width="120"
+                            Width="150"
                             Binding="{Binding Version}"
                             CanUserSort="True"
                             Header="Version"
@@ -426,7 +388,7 @@
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center" />
                                     <Setter Property="VerticalAlignment" Value="Center" />
-                                    <Setter Property="FontFamily" Value="Consolas, Courier New" />
+                                    <Setter Property="FontFamily" Value="맑은 고딕" />
                                     <Setter Property="FontSize" Value="13" />
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
@@ -440,7 +402,7 @@
                             SortMemberPath="Status">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Grid HorizontalAlignment="Center">
+                                    <Grid HorizontalAlignment="Left">
                                         <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                             <Ellipse
                                                 Width="10"
@@ -451,11 +413,28 @@
                                                 ToolTip="{Binding StatusText}" />
                                             <TextBlock
                                                 VerticalAlignment="Center"
-                                                FontSize="11"
-                                                FontWeight="Regular"
+                                                FontSize="13"
+                                                FontFamily="맑은 고딕"
                                                 Text="{Binding StatusText}" />
                                         </StackPanel>
                                     </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!--  포트 정보  -->
+                        <DataGridTemplateColumn
+    Width="200"
+    CanUserSort="False"
+    Header="포트 정보">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock VerticalAlignment="Center">
+                <Run FontWeight="Medium" Text="HTTP:" />
+                <Run Text="{Binding HttpPort}" />
+                <Run FontWeight="Medium" Text="  RTSP:" />
+                <Run Text="{Binding RtspPort}" />
+                                    </TextBlock>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -512,7 +491,7 @@
                                 Header="클립보드에 복사"
                                 Icon="{ui:SymbolIcon Copy24}" />
                             <MenuItem
-                                Command="{Binding ExportCommand}"
+                                Command="{Binding ExportSelectedCommand}"
                                 Header="파일로 내보내기"
                                 Icon="{ui:SymbolIcon DocumentArrowDown24}" />
                         </ContextMenu>
