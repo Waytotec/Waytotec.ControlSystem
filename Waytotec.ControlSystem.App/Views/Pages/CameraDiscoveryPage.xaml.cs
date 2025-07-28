@@ -28,7 +28,15 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         /// </summary>
         private void CopyToClipboard_Click(object sender, RoutedEventArgs e)
         {
-            if (ViewModel.SelectedCamera != null)
+            if (ViewModel.SelectedCameras.Count > 0)
+            {
+                if (ViewModel.CopySelectedToClipboardCommand.CanExecute(null))
+                {
+                    ViewModel.CopySelectedToClipboardCommand.Execute(null);
+                    e.Handled = true;
+                }
+            }
+            else if (ViewModel.SelectedCamera != null)
             {
                 var camera = ViewModel.SelectedCamera;
                 var text = $"IP: {camera.IpAddressString}\n" +
@@ -218,20 +226,8 @@ namespace Waytotec.ControlSystem.App.Views.Pages
 
                     // Ctrl+C: 선택된 항목 복사
                     case System.Windows.Input.Key.C when e.KeyboardDevice.Modifiers == System.Windows.Input.ModifierKeys.Control:
-                        if (ViewModel.SelectedCameras.Count > 0)
-                        {
-                            if (ViewModel.CopySelectedToClipboardCommand.CanExecute(null))
-                            {
-                                ViewModel.CopySelectedToClipboardCommand.Execute(null);
-                                e.Handled = true;
-                            }
-                        }
-                        else if (ViewModel.SelectedCamera != null)
-                        {
-                            // 단일 선택인 경우 기존 방식 사용
-                            CopyToClipboard_Click(sender, e);
-                            e.Handled = true;
-                        }
+                        CopyToClipboard_Click(sender, e);
+                        e.Handled = true;
                         break;
 
                     // F5: 선택된 카메라들 새로고침
