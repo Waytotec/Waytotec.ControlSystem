@@ -25,15 +25,64 @@
                 <ResourceDictionary Source="/Resources/ModernGroupBoxStyle.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!--  상태별 색상 컨버터  -->
+            <!--  상태별 색상 컨버터들  -->
             <conv:StatusToColorConverter x:Key="StatusToColorConverter" />
+            <conv:StatusToTextColorConverter x:Key="StatusToTextColorConverter" />
+            <conv:StatusToRowBackgroundConverter x:Key="StatusToRowBackgroundConverter" />
+            <conv:StatusToIconConverter x:Key="StatusToIconConverter" />
+            <conv:StatusToBorderConverter x:Key="StatusToBorderConverter" />
 
             <!--  불린 반전 컨버터  -->
             <conv:InverseBooleanConverter x:Key="InverseBooleanConverter" />
 
-
             <!--  GroupBox 콘텐츠 높이 계산 컨버터  -->
             <conv:GroupBoxContentHeightConverter x:Key="GroupBoxContentHeightConverter" />
+
+            <!--  DataGrid 행 스타일 - 상태별 배경색 적용  -->
+            <Style x:Key="StatusRowStyle" TargetType="DataGridRow">
+                <Setter Property="Background" Value="{Binding Status, Converter={StaticResource StatusToRowBackgroundConverter}}" />
+                <Setter Property="BorderBrush" Value="{Binding Status, Converter={StaticResource StatusToBorderConverter}}" />
+                <Setter Property="BorderThickness" Value="0,0,0,1" />
+                <Style.Triggers>
+                    <!-- 선택된 행 스타일 -->
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
+                        <Setter Property="BorderThickness" Value="2" />
+                    </Trigger>
+                    <!-- 마우스 오버 스타일 -->
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--  상태 셀 스타일  -->
+            <Style x:Key="StatusCellStyle" TargetType="DataGridCell">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="DataGridCell">
+                            <Grid Background="{TemplateBinding Background}">
+                                <StackPanel Orientation="Horizontal" 
+                                          HorizontalAlignment="Center" 
+                                          VerticalAlignment="Center">
+                                    <!-- 상태 아이콘 -->
+                                    <TextBlock Text="{Binding Status, Converter={StaticResource StatusToIconConverter}}"
+                                             Foreground="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
+                                             FontSize="16"
+                                             FontWeight="Bold"
+                                             Margin="0,0,8,0" />
+                                    <!-- 상태 텍스트 -->
+                                    <TextBlock Text="{Binding StatusText}"
+                                             Foreground="{Binding Status, Converter={StaticResource StatusToTextColorConverter}}"
+                                             FontWeight="SemiBold"
+                                             FontSize="12" />
+                                </StackPanel>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </Page.Resources>
 
@@ -124,7 +173,7 @@
                             Icon="{ui:SymbolIcon DocumentArrowDown24}" />
                     </WrapPanel>
 
-                    <!--  필터 및 검색 설정  -->
+                    <!--  필터 및 검색 설정  -->                    
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -195,7 +244,7 @@
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch">
                 <!--  DataGrid와 진행률 표시를 위한 Grid  -->
-                <DataGrid
+                <ui:DataGrid
                     Name="CameraDataGrid"
                     AutoGenerateColumns="False"
                     Background="Transparent"
@@ -228,7 +277,7 @@
                     VirtualizingPanel.ScrollUnit="Pixel"
                     VirtualizingPanel.VirtualizationMode="Recycling">
 
-                    <DataGrid.Resources>
+                    <ui:DataGrid.Resources>
                         <!--  체크박스 컬럼을 위한 스타일  -->
                         <Style x:Key="CenterCheckBox" TargetType="CheckBox">
                             <Setter Property="HorizontalAlignment" Value="Center" />
@@ -277,10 +326,10 @@
                                 </Trigger>-->
                             </Style.Triggers>
                         </Style>
-                    </DataGrid.Resources>
+                    </ui:DataGrid.Resources>
 
                     <!--  기존 DataGrid.Columns를 다음과 같이 수정 - 정렬 최적화 적용  -->
-                    <DataGrid.Columns>
+                    <ui:DataGrid.Columns>
                         <!--  체크박스 컬럼 (다중 선택용) - 새로 추가  -->
                         <DataGridTemplateColumn
                             Width="40"
@@ -438,9 +487,9 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                    </DataGrid.Columns>
+                    </ui:DataGrid.Columns>
 
-                    <DataGrid.RowStyle>
+                    <ui:DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
                             <Setter Property="Background" Value="Transparent" />
                             <Style.Triggers>
@@ -458,9 +507,9 @@
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </DataGrid.RowStyle>
+                    </ui:DataGrid.RowStyle>
 
-                    <DataGrid.ContextMenu>
+                    <ui:DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem
                                 Command="{Binding RefreshSelectedCommand}"
@@ -495,8 +544,8 @@
                                 Header="파일로 내보내기"
                                 Icon="{ui:SymbolIcon DocumentArrowDown24}" />
                         </ContextMenu>
-                    </DataGrid.ContextMenu>
-                </DataGrid>
+                    </ui:DataGrid.ContextMenu>
+                </ui:DataGrid>
 
                 <!--  진행률 표시 오버레이  -->
                 <Border
