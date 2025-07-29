@@ -157,7 +157,8 @@ namespace Waytotec.ControlSystem.Core.Models
         public int PtzPort { get; set; } = 0;
 
         // UI 표시용 속성들
-        public string IpAddressString => IpAddress?.ToString() ?? "알 수 없음";
+        // public string IpAddressString => IpAddress?.ToString() ?? "알 수 없음";
+        public string IpAddressString { get; set; } = string.Empty;
 
         public string FormattedMacAddress => FormatMacAddress(MacAddress);
 

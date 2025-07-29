@@ -8,6 +8,7 @@
     xmlns:local="clr-namespace:Waytotec.ControlSystem.App.Views.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:controls="clr-namespace:Waytotec.ControlSystem.App.Views.Controls"
     Title="카메라 검색3"
     d:DataContext="{d:DesignInstance local:CameraDiscoveryPage,
                                      IsDesignTimeCreatable=False}"
@@ -95,7 +96,7 @@
             <!--  중앙 영역 - * 유지  -->
             <RowDefinition Height="Auto" />
             <!--  하단 영역 - Auto로 변경  -->
-        </Grid.RowDefinitions>
+        </Grid.RowDefinitions>        
 
         <!--  상단 영역 (고정)  -->
         <StackPanel Grid.Row="0">
@@ -223,7 +224,7 @@
                                 <ui:NumberBox
                                     Width="130"
                                     VerticalAlignment="Center"
-                                    Maximum="32"
+                                    Maximum="255"
                                     Minimum="8"
                                     SpinButtonPlacementMode="Inline"
                                     Value="{Binding NetworkMask}" />
@@ -234,357 +235,382 @@
             </GroupBox>
         </StackPanel>
 
-        <!--  중앙 영역 - 카메라 목록 (스크롤 가능)  -->
-        <GroupBox
-            Grid.Row="1"
-            Header="검색된 카메라 목록"
-            Style="{StaticResource ModernGroupBoxStyle}">
-            <Grid
-                MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType={x:Type GroupBox}}, Converter={StaticResource GroupBoxContentHeightConverter}}"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch">
-                <!--  DataGrid와 진행률 표시를 위한 Grid  -->
-                <ui:DataGrid
-                    Name="CameraDataGrid"
-                    AutoGenerateColumns="False"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    CanUserAddRows="False"
-                    CanUserDeleteRows="False"
-                    CanUserReorderColumns="True"
-                    CanUserResizeColumns="True"
-                    CanUserSortColumns="True"                    
-                    HeadersVisibility="Column"
-                    GridLinesVisibility="Horizontal"
-                    VerticalAlignment="Center"                    
-                    HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                    IsReadOnly="True"
-                    ItemsSource="{Binding CamerasView}"
-                    KeyDown="CameraDataGrid_KeyDown"
-                    LoadingRow="CameraDataGrid_LoadingRow"
-                    MouseDoubleClick="CameraDataGrid_MouseDoubleClick"
-                    PreviewMouseDown="CameraDataGrid_PreviewMouseDown"
-                    RowHeight="25"
-                    ScrollViewer.CanContentScroll="True"
-                    ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                    ScrollViewer.VerticalScrollBarVisibility="Auto"
-                    SelectedItem="{Binding SelectedCamera}"
-                    SelectionChanged="CameraDataGrid_SelectionChanged"
-                    SelectionMode="Extended"
-                    SelectionUnit="FullRow"
-                    UnloadingRow="CameraDataGrid_UnloadingRow"
-                    VirtualizingPanel.IsVirtualizing="True"
-                    VirtualizingPanel.ScrollUnit="Pixel"
-                    VirtualizingPanel.VirtualizationMode="Recycling">
+        
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
 
-                    <ui:DataGrid.Resources>
-                        <!--  체크박스 컬럼을 위한 스타일  -->
-                        <Style x:Key="CenterCheckBox" TargetType="CheckBox">
-                            <Setter Property="HorizontalAlignment" Value="Center" />
-                            <Setter Property="VerticalAlignment" Value="Center" />
-                            <Setter Property="IsTabStop" Value="False" />
-                        </Style>
+            <!--  중앙 영역 - 카메라 목록 (스크롤 가능)  -->
+            <GroupBox
+                Grid.Column="0"
+                Grid.Row="0"
+                Header="검색된 카메라 목록"
+                Style="{StaticResource ModernGroupBoxStyle}">
+                <Grid
+                    MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType={x:Type GroupBox}}, Converter={StaticResource GroupBoxContentHeightConverter}}"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch">
+                    <!--  DataGrid와 진행률 표시를 위한 Grid  -->
+                    <ui:DataGrid
+                        Name="CameraDataGrid"
+                        AutoGenerateColumns="False"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        CanUserAddRows="False"
+                        CanUserDeleteRows="False"
+                        CanUserReorderColumns="True"
+                        CanUserResizeColumns="True"
+                        CanUserSortColumns="True"                    
+                        HeadersVisibility="Column"
+                        GridLinesVisibility="Horizontal"
+                        VerticalAlignment="Center"                    
+                        HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                        IsReadOnly="True"
+                        ItemsSource="{Binding CamerasView}"
+                        KeyDown="CameraDataGrid_KeyDown"
+                        LoadingRow="CameraDataGrid_LoadingRow"
+                        MouseDoubleClick="CameraDataGrid_MouseDoubleClick"                        
+                        RowHeight="30"
+                        ScrollViewer.CanContentScroll="True"
+                        ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                        SelectedItem="{Binding SelectedCamera}"
+                        SelectionChanged="CameraDataGrid_SelectionChanged"
+                        SelectionMode="Extended"                    
+                        SelectionUnit="FullRow"
+                        UnloadingRow="CameraDataGrid_UnloadingRow"
+                        VirtualizingPanel.IsVirtualizing="True"
+                        VirtualizingPanel.ScrollUnit="Pixel"
+                        VirtualizingPanel.VirtualizationMode="Recycling">
 
-                        <!--  개선된 컬럼 헤더 스타일  -->
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
-                            <Setter Property="BorderThickness" Value="0,0,1,1" />
-                            <Setter Property="Padding" Value="8,6" />
-                            <Setter Property="FontWeight" Value="SemiBold" />
-                            <Setter Property="FontSize" Value="12" />
-                            <Setter Property="HorizontalContentAlignment" Value="Center" />
-                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
-                                    <Setter Property="Cursor" Value="Hand" />
-                                </Trigger>
-                                <Trigger Property="SortDirection" Value="Ascending">
-                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
-                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-                                </Trigger>
-                                <Trigger Property="SortDirection" Value="Descending">
-                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
-                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
+                        <ui:DataGrid.Resources>
+                            <!--  체크박스 컬럼을 위한 스타일  -->
+                            <Style x:Key="CenterCheckBox" TargetType="CheckBox">
+                                <Setter Property="HorizontalAlignment" Value="Center" />
+                                <Setter Property="VerticalAlignment" Value="Center" />
+                                <Setter Property="IsTabStop" Value="False" />
+                            </Style>
 
-                        <!--  셀 스타일 개선  -->
-                        <Style TargetType="DataGridCell">
-                            <!--<Setter Property="Padding" Value="4,4" />-->
-                            <!--<Setter Property="VerticalAlignment" Value="Center" />-->
-                            <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="Transparent" />
-                                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />                                    
-                                </Trigger>
-                                <!--<Trigger Property="IsFocused" Value="True">
-                                    <Setter Property="BorderThickness" Value="0" />
-                                </Trigger>-->
-                            </Style.Triggers>
-                        </Style>
-                    </ui:DataGrid.Resources>
+                            <!--  개선된 컬럼 헤더 스타일  -->
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                                <Setter Property="BorderThickness" Value="0,0,1,1" />
+                                <Setter Property="Padding" Value="8,6" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="FontSize" Value="12" />
+                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                                        <Setter Property="Cursor" Value="Hand" />
+                                    </Trigger>
+                                    <Trigger Property="SortDirection" Value="Ascending">
+                                        <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="SortDirection" Value="Descending">
+                                        <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
 
-                    <!--  기존 DataGrid.Columns를 다음과 같이 수정 - 정렬 최적화 적용  -->
-                    <ui:DataGrid.Columns>
-                        <!--  체크박스 컬럼 (다중 선택용) - 새로 추가  -->
-                        <DataGridTemplateColumn
-                            Width="40"
-                            CanUserSort="False"
-                            Visibility="Hidden"
-                            Header="☐">
-                            <DataGridTemplateColumn.HeaderTemplate>
-                                <DataTemplate>
-                                    <CheckBox
-                                        HorizontalAlignment="Center"
+                            <!--  셀 스타일 개선  -->
+                            <Style TargetType="DataGridCell">
+                                <!--<Setter Property="Padding" Value="4,4" />-->
+                                <!--<Setter Property="VerticalAlignment" Value="Center" />-->
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                    </Trigger>
+                                    <!--<Trigger Property="IsFocused" Value="True">
+                            <Setter Property="BorderThickness" Value="0" />
+                        </Trigger>-->
+                                </Style.Triggers>
+                            </Style>
+                        </ui:DataGrid.Resources>
+
+                        <!--  기존 DataGrid.Columns를 다음과 같이 수정 - 정렬 최적화 적용  -->
+                        <ui:DataGrid.Columns>
+                            <!--  체크박스 컬럼 (다중 선택용) - 새로 추가  -->
+                            <DataGridTemplateColumn
+                                Width="40"
+                                CanUserSort="False"
+                                Visibility="Hidden"
+                                Header="☐"> 
+                                <DataGridTemplateColumn.HeaderTemplate>
+                                    <DataTemplate>
+                                        <CheckBox
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Command="{Binding DataContext.SelectAllCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                IsChecked="{Binding DataContext.IsAllSelected, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                Style="{StaticResource CenterCheckBox}"
+                                ToolTip="모두 선택/해제" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.HeaderTemplate>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox
+                                Click="CheckBox_Click"
+                                IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                Style="{StaticResource CenterCheckBox}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!--  ID 컬럼 (순번) - 정렬 비활성화  -->
+                            <DataGridTextColumn
+                                Width="50"
+                                Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Header}"
+                                CanUserSort="False"
+                                Header="ID"
+                                IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                        <Setter Property="FontFamily" Value="맑은 고딕" />
+                                        <Setter Property="FontSize" Value="13" />
+                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!--  IP 주소 - IP 정렬 최적화  -->
+                            <DataGridTextColumn
+                                Width="110"
+                                Binding="{Binding IpAddressString}"
+                                CanUserSort="True"
+                                Header="IP"
+                                SortMemberPath="IpAddressAsUInt">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                        <Setter Property="FontFamily" Value="맑은 고딕" />
+                                        <Setter Property="FontSize" Value="13" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!--  MAC 주소 - MAC 정렬 최적화  -->
+                            <DataGridTextColumn
+                                Width="140"
+                                Binding="{Binding FormattedMacAddress}"
+                                CanUserSort="True"
+                                Header="MAC"
+                                SortMemberPath="MacAddress">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                        <Setter Property="FontFamily" Value="맑은 고딕" />
+                                        <Setter Property="FontSize" Value="13" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!--  시리얼 번호 - 영숫자 정렬  -->
+                            <DataGridTextColumn
+                                Width="120"
+                                Binding="{Binding SerialNumber}"
+                                CanUserSort="True"
+                                Header="SN"
+                                SortMemberPath="SerialNumber">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                        <Setter Property="FontFamily" Value="맑은 고딕" />
+                                        <Setter Property="FontSize" Value="13" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!--  버전 - 버전 비교 정렬 최적화  -->
+                            <DataGridTextColumn
+                                Width="100"
+                                Visibility="Hidden"
+                                Binding="{Binding Version}"
+                                CanUserSort="True"
+                                Header="Version"
+                                SortMemberPath="Version">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                        <Setter Property="FontFamily" Value="맑은 고딕" />
+                                        <Setter Property="FontSize" Value="13" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!--  상태 - 열거형 정렬 최적화  -->
+                            <DataGridTemplateColumn
+                                Width="80"
+                                CanUserSort="True"
+                                Header="Status"
+                                SortMemberPath="Status">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid HorizontalAlignment="Left">
+                                            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                <Ellipse
+                                        Width="10"
+                                        Height="10"
+                                        Margin="0,0,5,0"
                                         VerticalAlignment="Center"
-                                        Command="{Binding DataContext.SelectAllCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                        IsChecked="{Binding DataContext.IsAllSelected, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                        Style="{StaticResource CenterCheckBox}"
-                                        ToolTip="모두 선택/해제" />
-                                </DataTemplate>
-                            </DataGridTemplateColumn.HeaderTemplate>
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <CheckBox
-                                        Click="CheckBox_Click"
-                                        IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
-                                        Style="{StaticResource CenterCheckBox}" />
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                                        Fill="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
+                                        ToolTip="{Binding StatusText}" />
+                                                <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontSize="13"
+                                        FontFamily="맑은 고딕"
+                                        Text="{Binding StatusText}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
 
-                        <!--  ID 컬럼 (순번) - 정렬 비활성화  -->
-                        <DataGridTextColumn
-                            Width="50"
-                            Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Header}"
-                            CanUserSort="False"
-                            Header="ID"
-                            IsReadOnly="True">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="HorizontalAlignment" Value="Center" />
-                                    <Setter Property="VerticalAlignment" Value="Center" />
-                                    <Setter Property="FontFamily" Value="맑은 고딕" />
-                                    <Setter Property="FontSize" Value="13" />
-                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
+                            <!--  포트 정보  -->
+                            <DataGridTemplateColumn 
+                                Width="180"
+                                CanUserSort="False"
+                                Header="포트 정보">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock VerticalAlignment="Center">
+                                <Run FontWeight="Medium" Text="HTTP:" />
+                                <Run Text="{Binding HttpPort}" />
+                                <Run FontWeight="Medium" Text="  RTSP:" />
+                                <Run Text="{Binding RtspPort}" />
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </ui:DataGrid.Columns>
 
-                        <!--  IP 주소 - IP 정렬 최적화  -->
-                        <DataGridTextColumn
-                            Width="180"
-                            Binding="{Binding IpAddressString}"
-                            CanUserSort="True"
-                            Header="IP"
-                            SortMemberPath="IpAddressAsUInt">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="HorizontalAlignment" Value="Center" />
-                                    <Setter Property="VerticalAlignment" Value="Center" />
-                                    <Setter Property="FontFamily" Value="맑은 고딕" />
-                                    <Setter Property="FontSize" Value="13" />
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
+                        <ui:DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                    </Trigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="Offline">
+                                        <Setter Property="Opacity" Value="0.6" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="Error">
+                                        <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:DataGrid.RowStyle>
 
-                        <!--  MAC 주소 - MAC 정렬 최적화  -->
-                        <DataGridTextColumn
-                            Width="200"
-                            Binding="{Binding FormattedMacAddress}"
-                            CanUserSort="True"
-                            Header="MAC"
-                            SortMemberPath="MacAddress">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="HorizontalAlignment" Value="Center" />
-                                    <Setter Property="VerticalAlignment" Value="Center" />
-                                    <Setter Property="FontFamily" Value="맑은 고딕" />
-                                    <Setter Property="FontSize" Value="13" />
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-
-                        <!--  시리얼 번호 - 영숫자 정렬  -->
-                        <DataGridTextColumn
-                            Width="150"
-                            Binding="{Binding SerialNumber}"
-                            CanUserSort="True"
-                            Header="SN"
-                            SortMemberPath="SerialNumber">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="HorizontalAlignment" Value="Center" />
-                                    <Setter Property="VerticalAlignment" Value="Center" />
-                                    <Setter Property="FontFamily" Value="맑은 고딕" />
-                                    <Setter Property="FontSize" Value="13" />
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-
-                        <!--  버전 - 버전 비교 정렬 최적화  -->
-                        <DataGridTextColumn
-                            Width="150"
-                            Binding="{Binding Version}"
-                            CanUserSort="True"
-                            Header="Version"
-                            SortMemberPath="Version">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="HorizontalAlignment" Value="Center" />
-                                    <Setter Property="VerticalAlignment" Value="Center" />
-                                    <Setter Property="FontFamily" Value="맑은 고딕" />
-                                    <Setter Property="FontSize" Value="13" />
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-
-                        <!--  상태 - 열거형 정렬 최적화  -->
-                        <DataGridTemplateColumn
-                            Width="100"
-                            CanUserSort="True"
-                            Header="Status"
-                            SortMemberPath="Status">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Grid HorizontalAlignment="Left">
-                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                            <Ellipse
-                                                Width="10"
-                                                Height="10"
-                                                Margin="0,0,5,0"
-                                                VerticalAlignment="Center"
-                                                Fill="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
-                                                ToolTip="{Binding StatusText}" />
-                                            <TextBlock
-                                                VerticalAlignment="Center"
-                                                FontSize="13"
-                                                FontFamily="맑은 고딕"
-                                                Text="{Binding StatusText}" />
-                                        </StackPanel>
-                                    </Grid>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-
-                        <!--  포트 정보  -->
-                        <DataGridTemplateColumn
-    Width="200"
-    CanUserSort="False"
-    Header="포트 정보">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock VerticalAlignment="Center">
-                <Run FontWeight="Medium" Text="HTTP:" />
-                <Run Text="{Binding HttpPort}" />
-                <Run FontWeight="Medium" Text="  RTSP:" />
-                <Run Text="{Binding RtspPort}" />
-                                    </TextBlock>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                    </ui:DataGrid.Columns>
-
-                    <ui:DataGrid.RowStyle>
-                        <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="Transparent" />
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
-                                </Trigger>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
-                                </Trigger>
-                                <DataTrigger Binding="{Binding Status}" Value="Offline">
-                                    <Setter Property="Opacity" Value="0.6" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Status}" Value="Error">
-                                    <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ui:DataGrid.RowStyle>
-
-                    <ui:DataGrid.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem
-                                Command="{Binding RefreshSelectedCommand}"
-                                Header="새로고침"
-                                Icon="{ui:SymbolIcon ArrowClockwise24}" />
-                            <Separator />
-                            <MenuItem Header="정렬">
+                        <ui:DataGrid.ContextMenu>
+                            <ContextMenu>
                                 <MenuItem
-                                    Command="{Binding SortCommand}"
-                                    CommandParameter="IP주소"
-                                    Header="IP주소로 정렬" />
+                                    Command="{Binding RefreshSelectedCommand}"
+                                    Header="새로고침"
+                                    Icon="{ui:SymbolIcon ArrowClockwise24}" />
+                                <Separator />
+                                <MenuItem Header="정렬">
+                                    <MenuItem
+                                        Command="{Binding SortCommand}"
+                                        CommandParameter="IP주소"
+                                        Header="IP주소로 정렬" />
+                                    <MenuItem
+                                        Command="{Binding SortCommand}"
+                                        CommandParameter="MAC주소"
+                                        Header="MAC주소로 정렬" />
+                                    <MenuItem
+                                        Command="{Binding SortCommand}"
+                                        CommandParameter="상태"
+                                        Header="상태로 정렬" />
+                                    <MenuItem
+                                        Command="{Binding SortCommand}"
+                                        CommandParameter="마지막확인"
+                                        Header="마지막 확인순 정렬" />
+                                </MenuItem>
+                                <Separator />
                                 <MenuItem
-                                    Command="{Binding SortCommand}"
-                                    CommandParameter="MAC주소"
-                                    Header="MAC주소로 정렬" />
+                                    Click="CopyToClipboard_Click"
+                                    Header="클립보드에 복사"
+                                    Icon="{ui:SymbolIcon Copy24}" />
                                 <MenuItem
-                                    Command="{Binding SortCommand}"
-                                    CommandParameter="상태"
-                                    Header="상태로 정렬" />
-                                <MenuItem
-                                    Command="{Binding SortCommand}"
-                                    CommandParameter="마지막확인"
-                                    Header="마지막 확인순 정렬" />
-                            </MenuItem>
-                            <Separator />
-                            <MenuItem
-                                Click="CopyToClipboard_Click"
-                                Header="클립보드에 복사"
-                                Icon="{ui:SymbolIcon Copy24}" />
-                            <MenuItem
-                                Command="{Binding ExportSelectedCommand}"
-                                Header="파일로 내보내기"
-                                Icon="{ui:SymbolIcon DocumentArrowDown24}" />
-                        </ContextMenu>
-                    </ui:DataGrid.ContextMenu>
-                </ui:DataGrid>
+                                    Command="{Binding ExportSelectedCommand}"
+                                    Header="파일로 내보내기"
+                                    Icon="{ui:SymbolIcon DocumentArrowDown24}" />
+                            </ContextMenu>
+                        </ui:DataGrid.ContextMenu>
+                    </ui:DataGrid>
 
-                <!--  진행률 표시 오버레이  -->
-                <Border
-                    Panel.ZIndex="10"
-                    Style="{StaticResource ProgressOverlayStyle}"
-                    Visibility="{Binding ShowProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <Grid>
-                        <StackPanel
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Orientation="Vertical">
-                            <ui:ProgressRing
-                                Width="60"
-                                Height="60"
-                                IsIndeterminate="False"
-                                Progress="{Binding ScanProgress}" />
-                            <TextBlock
-                                Margin="0,20,0,10"
+                    <!--  진행률 표시 오버레이  -->
+                    <Border
+                        Panel.ZIndex="10"
+                        Style="{StaticResource ProgressOverlayStyle}"
+                        Visibility="{Binding ShowProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid>
+                            <StackPanel
                                 HorizontalAlignment="Center"
-                                FontSize="16"
-                                FontWeight="Medium"
-                                Foreground="White"
-                                Text="{Binding StatusMessage}" />
-                            <TextBlock
-                                HorizontalAlignment="Center"
-                                FontSize="24"
-                                FontWeight="Bold"
-                                Foreground="White">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}{0:F0}%">
-                                        <Binding Path="ScanProgress" />
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-            </Grid>
-        </GroupBox>
+                                VerticalAlignment="Center"
+                                Orientation="Vertical"> 
+                                <ui:ProgressRing
+                                    Width="60"
+                                    Height="60"
+                                    IsIndeterminate="False"
+                                    Progress="{Binding ScanProgress}" />
+                                <TextBlock
+                                    Margin="0,20,0,10"
+                                    HorizontalAlignment="Center"
+                                    FontSize="16"
+                                    FontWeight="Medium"
+                                    Foreground="White"
+                                    Text="{Binding StatusMessage}" />
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    FontSize="24"
+                                    FontWeight="Bold"
+                                    Foreground="White">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}{0:F0}%">
+                                            <Binding Path="ScanProgress" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </GroupBox>
+
+            <!--  영상 영역  -->
+            <GroupBox 
+                Grid.Row="0"
+                Grid.Column="2"            
+                Header="실시간 영상"
+                Style="{StaticResource ModernGroupBoxStyle}"
+                >
+                <controls:RtspVideoViewer 
+                    x:Name="RtspViewer"
+                    Background="Black"
+                    MouseDoubleClick="RtspViewer_MouseDoubleClick" />
+            </GroupBox> 
+        </Grid>
+        
+
 
         <!--  하단 상태바 (고정)  -->
         <GroupBox

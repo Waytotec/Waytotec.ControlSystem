@@ -195,6 +195,16 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                 ShowProgress = true;
                 ScanProgress = 0;
 
+                // 기존 카메라 목록 클리어
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    lock (_camerasLock)
+                    {
+                        Cameras.Clear();
+                        DiscoveredCount = 0;
+                    }
+                });
+
                 var stopwatch = Stopwatch.StartNew();
 
                 var cameras = await _discoveryService.DiscoverCamerasAsync(
@@ -202,6 +212,19 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                     CancellationToken.None);
 
                 stopwatch.Stop();
+
+                // UI 스레드에서 결과 업데이트
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    lock (_camerasLock)
+                    {
+                        foreach (var camera in cameras)
+                        {
+                            Cameras.Add(camera);
+                        }
+                        DiscoveredCount = Cameras.Count;
+                    }
+                });
 
                 StatusMessage = $"검색 완료 - {cameras.Count()}대 발견 ({stopwatch.Elapsed.TotalSeconds:F1}초)";
                 DiscoveredCount = cameras.Count();

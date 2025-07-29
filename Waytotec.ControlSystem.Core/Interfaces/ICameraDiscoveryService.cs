@@ -33,6 +33,21 @@ namespace Waytotec.ControlSystem.Core.Interfaces
             IPAddress endIp,
             CancellationToken cancellationToken = default);
 
+
+        /// <summary>
+        /// IP 대역 검색
+        /// </summary>
+        /// <param name="startIp">시작 IP</param>
+        /// <param name="endIp">종료 IP</param>
+        /// <param name="timeout">타임아웃</param>
+        /// <param name="cancellationToken">취소 토큰</param>
+        /// <returns>발견된 카메라 목록</returns>
+        Task<IEnumerable<DiscoveredCamera>> ScanNetworkRangeAsync(
+            IPAddress startIp,
+            IPAddress endIp,
+            TimeSpan? timeout = null,
+            CancellationToken cancellationToken = default);
+
         /// <summary>
         /// 단일 카메라 검증
         /// </summary>

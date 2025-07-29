@@ -122,19 +122,17 @@ namespace Waytotec.ControlSystem.Core.Models
     }
 
     /// <summary>
-    /// 검색 진행 상태 이벤트 인자
+    /// 검색 진행률 이벤트 인수
     /// </summary>
     public class DiscoveryProgressEventArgs : EventArgs
     {
-        public int TotalFound { get; }
         public TimeSpan ElapsedTime { get; }
-        public bool IsCompleted { get; }
+        public int DiscoveredCount { get; }
 
-        public DiscoveryProgressEventArgs(int totalFound, TimeSpan elapsedTime, bool isCompleted = false)
+        public DiscoveryProgressEventArgs(TimeSpan elapsedTime, int discoveredCount = 0)
         {
-            TotalFound = totalFound;
             ElapsedTime = elapsedTime;
-            IsCompleted = isCompleted;
+            DiscoveredCount = discoveredCount;
         }
     }
 }

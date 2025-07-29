@@ -174,9 +174,14 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         /// </summary>
         private void CameraDataGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            //if (ViewModel.SelectedCamera != null)
+            //{
+            //    OpenWebInterface_Click(sender, e);
+            //}
+
             if (ViewModel.SelectedCamera != null)
             {
-                OpenWebInterface_Click(sender, e);
+                RtspViewer.Load(ip: ViewModel.SelectedCamera.IpAddressString, stream: "stream0");
             }
         }
 
@@ -282,126 +287,6 @@ namespace Waytotec.ControlSystem.App.Views.Pages
             ViewModel.StatusMessage = $"{camerasToRemove.Count}대 카메라가 목록에서 제거되었습니다.";
         }
 
-        private void CameraDataGrid_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-         {
-            // 불필요한 커스텀 선택 로직 제거
-            // DataGrid의 기본 선택 동작을 그대로 사용
-            // 특별한 동작이 필요 없다면 이 메서드는 비워두거나 삭제해도 됩니다.
-            //var dataGrid = sender as DataGrid;
-            //if (dataGrid == null) return;
-
-            //// 클릭 위치에서 DataGridRow 찾기
-            //DependencyObject dep = (DependencyObject)e.OriginalSource;
-            //while (dep != null && !(dep is DataGridRow))
-            //    dep = VisualTreeHelper.GetParent(dep);
-
-            //if (dep is DataGridRow row)
-            //{
-            //    // 행이 선택되지 않았다면 선택
-            //    if (!row.IsSelected)
-            //    {
-            //        row.IsSelected = true;
-            //        dataGrid.SelectedItem = row.Item;
-            //    }
-            //}
-        }
-
-
-        /// <summary>
-        /// 마우스 위치에서 카메라 찾기 (개선된 로직)
-        /// </summary>
-        private DiscoveredCamera? FindCameraFromMousePosition(DataGrid dataGrid, MouseButtonEventArgs e)
-        {
-            // 방법 1: 직접적인 DataGridRow 찾기
-            var hit = e.OriginalSource as DependencyObject;
-            while (hit != null && !(hit is DataGridRow) && !(hit is System.Windows.Documents.Run))
-            {
-                hit = VisualTreeHelper.GetParent(hit);
-            }
-
-            if (hit is DataGridRow row && row.DataContext is DiscoveredCamera directCamera)
-            {
-                return directCamera;
-            }
-
-            // 방법 2: 마우스 위치 기반으로 찾기 (Row/Column 사이 클릭 처리)
-            Point mousePosition = e.GetPosition(dataGrid);
-
-            // HitTest를 이용한 방법
-            var hitTest = VisualTreeHelper.HitTest(dataGrid, mousePosition);
-            if (hitTest?.VisualHit != null)
-            {
-                var dataGridRow = FindVisualParent<DataGridRow>(hitTest.VisualHit);
-                if (dataGridRow?.DataContext is DiscoveredCamera hitTestCamera)
-                {
-                    return hitTestCamera;
-                }
-            }
-
-            // 방법 3: 계산을 통한 행 찾기 (최후의 방법)
-            var scrollViewer = GetVisualChild<ScrollViewer>(dataGrid);
-            if (scrollViewer != null)
-            {
-                // 헤더 높이를 고려한 실제 콘텐츠 영역에서의 Y 위치
-                double contentY = mousePosition.Y - dataGrid.ColumnHeaderHeight;
-                if (contentY > 0 && dataGrid.RowHeight > 0)
-                {
-                    // 클릭한 위치에 해당하는 Row 인덱스 계산
-                    int rowIndex = (int)(contentY / dataGrid.RowHeight);
-
-                    // 스크롤 위치도 고려
-                    rowIndex += (int)(scrollViewer.VerticalOffset / dataGrid.RowHeight);
-
-                    // 유효한 인덱스인지 확인
-                    if (rowIndex >= 0 && rowIndex < dataGrid.Items.Count)
-                    {
-                        if (dataGrid.Items[rowIndex] is DiscoveredCamera calculatedCamera)
-                        {
-                            return calculatedCamera;
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Shift 선택 처리 (범위 선택)
-        /// </summary>
-        private void HandleShiftSelection(DataGrid dataGrid, DiscoveredCamera targetCamera)
-        {
-            if (dataGrid.SelectedItems.Count == 0) return;
-
-            var cameras = ViewModel.Cameras.ToList();
-            var lastSelectedCamera = ViewModel.SelectedCameras.LastOrDefault();
-
-            if (lastSelectedCamera == null) return;
-
-            var startIndex = cameras.IndexOf(lastSelectedCamera);
-            var endIndex = cameras.IndexOf(targetCamera);
-
-            if (startIndex >= 0 && endIndex >= 0)
-            {
-                var minIndex = Math.Min(startIndex, endIndex);
-                var maxIndex = Math.Max(startIndex, endIndex);
-
-                // 범위 내의 모든 카메라 선택
-                for (int i = minIndex; i <= maxIndex; i++)
-                {
-                    var camera = cameras[i];
-                    if (!dataGrid.SelectedItems.Contains(camera))
-                    {
-                        dataGrid.SelectedItems.Add(camera);
-                    }
-                    if (!ViewModel.SelectedCameras.Contains(camera))
-                    {
-                        ViewModel.SelectedCameras.Add(camera);
-                    }
-                }
-            }
-        }
-
         /// <summary>
         /// 비주얼 트리에서 지정된 타입의 자식 요소 찾기
         /// </summary>
@@ -437,6 +322,21 @@ namespace Waytotec.ControlSystem.App.Views.Pages
                 return parent;
 
             return FindVisualParent<T>(parentObject);
+        }
+
+        private void RtspViewer_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // 현재 선택된 카메라의 IP 가져오기
+            string ip = "192.168.1.120"; // 기본값
+            string stream = "stream0";
+
+            if (ViewModel.SelectedCamera != null)
+            {
+                ip = ViewModel.SelectedCamera.IpAddressString;
+            }
+
+            var popup = new RtspPopupWindow(ip, stream);
+            popup.Show();
         }
     }
 }
