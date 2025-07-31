@@ -77,6 +77,15 @@ namespace Waytotec.ControlSystem.App.Views.Pages
                     case NotifyCollectionChangedAction.Reset:
                         CameraDataGrid.SelectedItems.Clear();
                         break;
+
+                    case NotifyCollectionChangedAction.Replace:
+                        // 전체 다시 선택
+                        CameraDataGrid.SelectedItems.Clear();
+                        foreach (var camera in ViewModel.SelectedCameras)
+                        {
+                            CameraDataGrid.SelectedItems.Add(camera);
+                        }
+                        break;
                 }
             }
             finally
@@ -102,7 +111,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         /// </summary>
         private void UpdateDataGridSelection()
         {
-            if (CameraDataGrid == null) return;
+            if (CameraDataGrid == null || ViewModel == null) return;
 
             // 선택 변경 이벤트를 일시적으로 비활성화
             CameraDataGrid.SelectionChanged -= CameraDataGrid_SelectionChanged;
@@ -125,7 +134,10 @@ namespace Waytotec.ControlSystem.App.Views.Pages
                     CameraDataGrid.SelectedItems.Clear();
                     foreach (var camera in ViewModel.SelectedCameras)
                     {
-                        CameraDataGrid.SelectedItems.Add(camera);
+                        if (CameraDataGrid.Items.Contains(camera))
+                        {
+                            CameraDataGrid.SelectedItems.Add(camera);
+                        }
                     }
                 }
             }
@@ -238,10 +250,6 @@ namespace Waytotec.ControlSystem.App.Views.Pages
 
                 // 단일 선택 속성도 업데이트
                 ViewModel.SelectedCamera = CameraDataGrid.SelectedItem as DiscoveredCamera;
-
-                // 전체 선택 상태 업데이트를 위해 명령 상태 갱신
-                ViewModel.SelectAllCommand.NotifyCanExecuteChanged();
-                ViewModel.UnselectAllCommand.NotifyCanExecuteChanged();
             }
             finally
             {
@@ -249,18 +257,18 @@ namespace Waytotec.ControlSystem.App.Views.Pages
                 ViewModel.SelectedCameras.CollectionChanged += OnViewModelSelectedCamerasChanged;
 
                 // 상태 메시지 업데이트
-                if (ViewModel.SelectedCameras.Count > 0)
-                {
-                    var firstCamera = ViewModel.SelectedCameras.First();
-                    if (ViewModel.SelectedCameras.Count == 1)
-                    {
-                        ViewModel.StatusMessage = $"선택됨: {firstCamera.IpAddressString} ({firstCamera.StatusText})";
-                    }
-                    else
-                    {
-                        ViewModel.StatusMessage = $"{ViewModel.SelectedCameras.Count}대 카메라 선택됨";
-                    }
-                }
+                //if (ViewModel.SelectedCameras.Count > 0)
+                //{
+                //    var firstCamera = ViewModel.SelectedCameras.First();
+                //    if (ViewModel.SelectedCameras.Count == 1)
+                //    {
+                //        ViewModel.StatusMessage = $"선택됨: {firstCamera.IpAddressString} ({firstCamera.StatusText})";
+                //    }
+                //    else
+                //    {
+                //        ViewModel.StatusMessage = $"{ViewModel.SelectedCameras.Count}대 카메라 선택됨";
+                //    }
+                //}
             }
         }
 

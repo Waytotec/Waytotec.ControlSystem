@@ -16,9 +16,28 @@ namespace Waytotec.ControlSystem.App.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            if (value == null)
+                return Visibility.Collapsed;
+
             if (value is int count)
             {
                 return count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            if (value is double doubleCount)
+            {
+                return doubleCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            if (value is long longCount)
+            {
+                return longCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            // 문자열로 된 숫자도 처리
+            if (value is string stringValue && int.TryParse(stringValue, out int parsedCount))
+            {
+                return parsedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
             }
 
             return Visibility.Collapsed;

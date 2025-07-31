@@ -615,10 +615,10 @@ VerticalAlignment="Stretch">
                         Icon="{ui:SymbolIcon Symbol=SelectAllOn24}"
                         ToolTip="DataGrid의 모든 항목을 선택하거나 선택 해제합니다"/>
                     <ui:InfoBadge
-    Margin="0,0,10,10"
-    VerticalAlignment="Center"
-    Value="{Binding SelectedCount}"
-    Visibility="{Binding SelectedCount, Converter={StaticResource CountToVisibilityConverter}}" />
+                        Margin="0,0,10,10"
+                        VerticalAlignment="Center"
+                        Value="{Binding SelectedCount}"
+                        Visibility="{Binding SelectedCount, Converter={StaticResource CountToVisibilityConverter}}" />
                     <ui:Button
                         Margin="0,0,10,10"
                         Padding="12,8"

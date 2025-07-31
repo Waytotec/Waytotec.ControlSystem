@@ -377,10 +377,14 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             lock (_camerasLock)
             {
                 Cameras.Clear();
+                SelectedCameras.Clear();
                 SelectedCamera = null;
                 DiscoveredCount = 0;
+                IsAllSelected = false;
                 StatusMessage = "목록이 지워졌습니다.";
             }
+            OnPropertyChanged(nameof(SelectAllButtonText));
+            OnPropertyChanged(nameof(SelectedCount));
         }
 
         /// <summary>
@@ -633,9 +637,14 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                     IsAllSelected = true;
                 }
 
+                // PropertyChanged 알림 수동 발생
+                OnPropertyChanged(nameof(SelectAllButtonText));
+                OnPropertyChanged(nameof(SelectedCount));
+
                 // 명령 상태 업데이트
-                SelectAllCommand.NotifyCanExecuteChanged();
-                UnselectAllCommand.NotifyCanExecuteChanged();
+                UpdateCommands();
+
+                StatusMessage = $"전체 선택됨: {SelectedCount}개";
             }
             catch (Exception ex)
             {
@@ -657,9 +666,14 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                     IsAllSelected = false;
                 }
 
+                // PropertyChanged 알림 수동 발생
+                OnPropertyChanged(nameof(SelectAllButtonText));
+                OnPropertyChanged(nameof(SelectedCount));
+
                 // 명령 상태 업데이트
-                SelectAllCommand.NotifyCanExecuteChanged();
-                UnselectAllCommand.NotifyCanExecuteChanged();
+                UpdateCommands();
+
+                StatusMessage = "전체 선택 해제됨";
             }
             catch (Exception ex)
             {
@@ -692,10 +706,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             UpdateSelectAllState();
 
             // 명령 상태 업데이트
-            SelectAllCommand.NotifyCanExecuteChanged();
-            UnselectAllCommand.NotifyCanExecuteChanged();
-            ToggleSelectAllCommand.NotifyCanExecuteChanged();
-            // ExportCommand.NotifyCanExecuteChanged();
+            UpdateCommands();
         }
 
         /// <summary>
@@ -704,6 +715,8 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         private void OnSelectedCamerasChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             UpdateSelectAllState();
+            OnPropertyChanged(nameof(SelectedCount));
+            UpdateCommands();
         }
 
 
@@ -714,6 +727,8 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         {
             lock (_camerasLock)
             {
+                var previousState = IsAllSelected;
+
                 if (Cameras.Count == 0)
                 {
                     IsAllSelected = false;
@@ -724,11 +739,30 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                                    Cameras.All(camera => SelectedCameras.Contains(camera));
                 }
 
-                if (Cameras.Count == SelectedCameras.Count)
+                // 상태가 변경되었으면 UI 업데이트
+                if (previousState != IsAllSelected)
                 {
-                    Debug.WriteLine("");
+                    OnPropertyChanged(nameof(SelectAllButtonText));
                 }
             }
+        }
+
+        /// <summary>
+        /// 명령들의 CanExecute 상태 업데이트
+        /// </summary>
+        private void UpdateCommands()
+        {
+            SelectAllCommand.NotifyCanExecuteChanged();
+            UnselectAllCommand.NotifyCanExecuteChanged();
+            ToggleSelectAllCommand.NotifyCanExecuteChanged();
+            ExportCommand.NotifyCanExecuteChanged();
+        }
+
+        // OnPropertyChanged 메서드 오버라이드 (IsAllSelected 변경 시 SelectAllButtonText 업데이트)
+        partial void OnIsAllSelectedChanged(bool value)
+        {
+            OnPropertyChanged(nameof(SelectAllButtonText));
+            UpdateCommands();
         }
 
         /// <summary>
