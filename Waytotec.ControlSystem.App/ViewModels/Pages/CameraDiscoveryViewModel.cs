@@ -1126,7 +1126,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             var serialNumber = serialPatterns[_random.Next(serialPatterns.Length)];
 
             // 펌웨어 버전 생성
-            var majorVersion = _random.Next(1, 5);
+            var majorVersion = _random.Next(1, 6);
             var minorVersion = _random.Next(0, 10);
             var buildVersion = _random.Next(0, 100);
             var version = $"v{majorVersion}.{minorVersion}.{buildVersion}";
