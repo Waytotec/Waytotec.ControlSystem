@@ -26,15 +26,14 @@ while ($true) {
             $time = 0.5
         }
         
-        # $time = [double]$time
-        # if ($time -le 1) {
-            # Write-Host $successLine -ForegroundColor Green
-        # } elseif ($time -le 100) {
-            # Write-Host $successLine -ForegroundColor Yellow
-        # } else {
-            # Write-Host $successLine -ForegroundColor Red
-        # }
-		Write-Host $successLine -ForegroundColor Green
+        $time = [double]$time
+        if ($time -le 1) {
+            Write-Host $successLine -ForegroundColor Green
+        } elseif ($time -le 100) {
+            Write-Host $successLine -ForegroundColor Yellow
+        } else {
+            Write-Host $successLine -ForegroundColor Red
+        }
     } elseif ($failedLine) {
         # 실패 시 빨간색으로 표시
         Write-Host $ip $failedLine -ForegroundColor Red

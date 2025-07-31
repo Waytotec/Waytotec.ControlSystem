@@ -492,7 +492,7 @@ VerticalAlignment="Stretch">
             Header="포트 정보">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock VerticalAlignment="Center">
+                                        <TextBlock VerticalAlignment="Center" Padding="5,0,0,0">
             <Run FontWeight="Medium" Text="HTTP:" />
             <Run Text="{Binding HttpPort}" />
             <Run FontWeight="Medium" Text="  RTSP:" />

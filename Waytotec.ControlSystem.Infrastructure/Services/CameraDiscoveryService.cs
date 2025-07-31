@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -96,69 +97,39 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
         public event EventHandler<DiscoveryProgressEventArgs>? DiscoveryProgress;
         public event EventHandler<EventArgs>? DiscoveryCompleted;
 
-        /// <summary>
-        /// 비동기 카메라 검색
-        /// </summary>
         public async Task<IEnumerable<DiscoveredCamera>> DiscoverCamerasAsync(
             TimeSpan? timeout = null,
             CancellationToken cancellationToken = default)
         {
             var timeoutMs = timeout?.TotalMilliseconds ?? DEFAULT_TIMEOUT_MS;
-            var discoveredCameras = new List<DiscoveredCamera>();
+            var stopwatch = Stopwatch.StartNew();
+
+            lock (_lockObject)
+            {
+                if (_isDiscovering)
+                    throw new InvalidOperationException("이미 검색이 진행 중입니다.");
+
+                _isDiscovering = true;
+                _discoveredCameras.Clear();
+            }
 
             try
             {
-                lock (_lockObject)
-                {
-                    if (_isDiscovering)
-                    {
-                        Debug.WriteLine("[CameraDiscovery] 이미 검색 중입니다.");
-                        return discoveredCameras;
-                    }
-                    _isDiscovering = true;
-                    _discoveredCameras.Clear();
-                }
-
-                Debug.WriteLine("[CameraDiscovery] 카메라 검색 시작");
-
-                _discoveryTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                _discoveryTokenSource.CancelAfter(TimeSpan.FromMilliseconds(timeoutMs));
+                Debug.WriteLine("[CameraDiscovery] 단발성 검색 시작");
 
                 await InitializeUdpClientAsync();
 
-                var stopwatch = Stopwatch.StartNew();
+                // 모든 네트워크 인터페이스에 브로드캐스트 전송
+                await SendBroadcastToAllInterfacesAsync();
 
-                // 브로드캐스트로 검색 패킷 전송
-                await SendBroadcastPacketAsync();
-
-                // 진행률 업데이트 및 응답 수신을 동시에 실행
-                var progressTask = UpdateProgressAsync(stopwatch, TimeSpan.FromMilliseconds(timeoutMs));
-                var receiveTask = ReceiveResponsesAsync(_discoveryTokenSource.Token);
-
-                // 모든 태스크 완료 대기
-                await Task.WhenAll(progressTask, receiveTask);
-
-                stopwatch.Stop();
+                // 응답 수신
+                await ReceiveResponsesAsync(timeoutMs, stopwatch, cancellationToken);
 
                 lock (_lockObject)
                 {
-                    discoveredCameras.AddRange(_discoveredCameras);
+                    DiscoveryCompleted?.Invoke(this, EventArgs.Empty);
+                    return _discoveredCameras.ToList();
                 }
-
-                Debug.WriteLine($"[CameraDiscovery] 검색 완료: {discoveredCameras.Count}대 발견");
-                DiscoveryCompleted?.Invoke(this, EventArgs.Empty);
-
-                return discoveredCameras;
-            }
-            catch (OperationCanceledException)
-            {
-                Debug.WriteLine("[CameraDiscovery] 검색이 취소되었습니다.");
-                return discoveredCameras;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CameraDiscovery] 검색 중 오류: {ex.Message}");
-                throw;
             }
             finally
             {
@@ -235,13 +206,13 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
                     _isDiscovering = false;
                 }
 
-                Debug.WriteLine("[CameraDiscovery] 검색이 중지되었습니다.");
-                await Task.CompletedTask;
+                Debug.WriteLine("[CameraDiscovery] 검색이 중지되었습니다.");                
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[CameraDiscovery] 검색 중지 중 오류: {ex.Message}");
             }
+            await Task.Delay(100); // 정리 시간 확보
         }
 
         /// <summary>
@@ -319,6 +290,146 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
         }
 
         /// <summary>
+        /// 모든 네트워크 인터페이스에 브로드캐스트 전송
+        /// </summary>
+        private async Task SendBroadcastToAllInterfacesAsync()
+        {
+            var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+            var tasks = new List<Task>();
+
+            Debug.WriteLine("[CameraDiscovery] 네트워크 인터페이스 검색 중...");
+
+            foreach (var networkInterface in networkInterfaces)
+            {
+                // 활성화된 네트워크 인터페이스만 처리
+                if (networkInterface.OperationalStatus != OperationalStatus.Up)
+                    continue;
+
+                // 루프백 인터페이스 제외
+                if (networkInterface.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                    continue;
+
+                Debug.WriteLine($"[CameraDiscovery] 활성 인터페이스: {networkInterface.Name} ({networkInterface.NetworkInterfaceType})");
+
+                var ipProperties = networkInterface.GetIPProperties();
+
+                foreach (var unicastAddress in ipProperties.UnicastAddresses)
+                {
+                    // IPv4 주소만 처리
+                    if (unicastAddress.Address.AddressFamily != AddressFamily.InterNetwork)
+                        continue;
+
+                    // APIPA 주소 제외 (169.254.x.x)
+                    if (unicastAddress.Address.ToString().StartsWith("169.254"))
+                        continue;
+
+                    Debug.WriteLine($"[CameraDiscovery] 유효한 IPv4 주소: {unicastAddress.Address} / {unicastAddress.IPv4Mask}");
+                    tasks.Add(SendBroadcastOnInterfaceAsync(unicastAddress));
+                }
+            }
+
+            if (tasks.Count > 0)
+            {
+                await Task.WhenAll(tasks);
+                Debug.WriteLine($"[CameraDiscovery] {tasks.Count}개 인터페이스에 브로드캐스트 전송 완료");
+            }
+            else
+            {
+                Debug.WriteLine("[CameraDiscovery] 경고: 브로드캐스트 가능한 인터페이스를 찾을 수 없습니다. 기본 브로드캐스트 시도");
+                await SendFallbackBroadcastAsync();
+            }
+        }
+
+        /// <summary>
+        /// 특정 네트워크 인터페이스에서 브로드캐스트 전송
+        /// </summary>
+        private async Task SendBroadcastOnInterfaceAsync(UnicastIPAddressInformation unicastAddress)
+        {
+            UdpClient? udpClient = null;
+            try
+            {
+                var localAddress = unicastAddress.Address;
+                var subnetMask = unicastAddress.IPv4Mask;
+
+                // 브로드캐스트 주소 계산
+                var broadcastAddress = GetBroadcastAddress(localAddress, subnetMask);
+
+                Debug.WriteLine($"[CameraDiscovery] {localAddress}에서 {broadcastAddress}로 브로드캐스트");
+
+                // 각 인터페이스별로 별도의 UDP 클라이언트 생성
+                udpClient = new UdpClient();
+                udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
+                udpClient.ExclusiveAddressUse = false;
+
+                // 특정 로컬 주소에 바인딩
+                var localEndPoint = new IPEndPoint(localAddress, 0); // 0 = 자동 포트 할당
+                udpClient.Client.Bind(localEndPoint);
+
+                // 서브넷 브로드캐스트 전송
+                var broadcastEndPoint = new IPEndPoint(broadcastAddress, DISCOVERY_PORT);
+                await udpClient.SendAsync(DISCOVERY_PACKET, DISCOVERY_PACKET.Length, broadcastEndPoint);
+
+                // 전역 브로드캐스트도 전송
+                var globalBroadcastEndPoint = new IPEndPoint(IPAddress.Broadcast, DISCOVERY_PORT);
+                await udpClient.SendAsync(DISCOVERY_PACKET, DISCOVERY_PACKET.Length, globalBroadcastEndPoint);
+
+                Debug.WriteLine($"[CameraDiscovery] {localAddress}에서 브로드캐스트 전송 완료");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CameraDiscovery] 인터페이스 {unicastAddress.Address}에서 브로드캐스트 실패: {ex.Message}");
+            }
+            finally
+            {
+                udpClient?.Close();
+                udpClient?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 폴백 브로드캐스트 전송
+        /// </summary>
+        private async Task SendFallbackBroadcastAsync()
+        {
+            try
+            {
+                Debug.WriteLine("[CameraDiscovery] 폴백 브로드캐스트 시도");
+                using var udpClient = new UdpClient();
+                udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
+
+                var broadcastEndPoint = new IPEndPoint(IPAddress.Broadcast, DISCOVERY_PORT);
+                await udpClient.SendAsync(DISCOVERY_PACKET, DISCOVERY_PACKET.Length, broadcastEndPoint);
+
+                Debug.WriteLine("[CameraDiscovery] 폴백 브로드캐스트 전송 완료");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CameraDiscovery] 폴백 브로드캐스트 실패: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 브로드캐스트 주소 계산
+        /// </summary>
+        private static IPAddress GetBroadcastAddress(IPAddress address, IPAddress subnetMask)
+        {
+            if (subnetMask == null)
+                return IPAddress.Broadcast;
+
+            var addressBytes = address.GetAddressBytes();
+            var subnetMaskBytes = subnetMask.GetAddressBytes();
+            var broadcastBytes = new byte[addressBytes.Length];
+
+            for (int i = 0; i < addressBytes.Length; i++)
+            {
+                broadcastBytes[i] = (byte)(addressBytes[i] | (subnetMaskBytes[i] ^ 255));
+            }
+
+            return new IPAddress(broadcastBytes);
+        }
+
+        /// <summary>
         /// UDP 클라이언트 초기화
         /// </summary>
         private async Task InitializeUdpClientAsync()
@@ -338,26 +449,6 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
         }
 
         /// <summary>
-        /// 브로드캐스트 패킷 전송
-        /// </summary>
-        private async Task SendBroadcastPacketAsync()
-        {
-            try
-            {
-                if (_udpClient == null) return;
-
-                var broadcastEndPoint = new IPEndPoint(IPAddress.Broadcast, DISCOVERY_PORT);
-                await _udpClient.SendAsync(DISCOVERY_PACKET, DISCOVERY_PACKET.Length, broadcastEndPoint);
-
-                Debug.WriteLine("[CameraDiscovery] 브로드캐스트 패킷 전송됨");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[CameraDiscovery] 브로드캐스트 전송 실패: {ex.Message}");
-            }
-        }
-
-        /// <summary>
         /// 주기적 브로드캐스트 (지속적 검색용)
         /// </summary>
         private async Task PeriodicBroadcastAsync(CancellationToken cancellationToken)
@@ -366,7 +457,7 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    await SendBroadcastPacketAsync();
+                    await SendBroadcastToAllInterfacesAsync();
                     await Task.Delay(3000, cancellationToken); // 3초 간격
                 }
             }
@@ -381,7 +472,85 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
         }
 
         /// <summary>
-        /// 응답 수신 루프 (수정된 버전)
+        /// 응답 수신 (지정된 시간동안)
+        /// </summary>
+        private async Task ReceiveResponsesAsync(double timeoutMs, Stopwatch stopwatch, CancellationToken cancellationToken)
+        {
+            // 수신 태스크와 진행률 업데이트를 분리
+            var receiveTask = Task.Run(async () =>
+            {
+                while (!cancellationToken.IsCancellationRequested && _udpClient != null)
+                {
+                    try
+                    {
+                        var result = await _udpClient.ReceiveAsync();
+                        Debug.WriteLine($"[CameraDiscovery] {result.RemoteEndPoint}에서 {result.Buffer.Length} 바이트 수신");
+
+                        var camera = ParseCameraResponse(result.Buffer, result.RemoteEndPoint);
+                        if (camera != null)
+                        {
+                            lock (_lockObject)
+                            {
+                                var existing = _discoveredCameras.FirstOrDefault(c => c.IpAddress.Equals(camera.IpAddress));
+                                if (existing != null)
+                                {
+                                    existing.LastSeen = DateTime.Now;
+                                    existing.Status = camera.Status;
+                                }
+                                else
+                                {
+                                    _discoveredCameras.Add(camera);
+                                }
+                            }
+
+                            CameraDiscovered?.Invoke(this, new CameraDiscoveredEventArgs(camera, result.RemoteEndPoint));
+                            Debug.WriteLine($"[CameraDiscovery] 카메라 발견: {camera.IpAddressString} ({camera.MacAddress})");
+                        }
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        break;
+                    }
+                    catch (SocketException ex) when (ex.SocketErrorCode == SocketError.Interrupted)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[CameraDiscovery] 수신 오류: {ex.Message}");
+                        await Task.Delay(100, cancellationToken);
+                    }
+                }
+            }, cancellationToken);
+
+            // 진행률 업데이트
+            while (stopwatch.ElapsedMilliseconds < timeoutMs && !cancellationToken.IsCancellationRequested)
+            {
+                lock (_lockObject)
+                {
+                    var progressPercent = (int)((stopwatch.ElapsedMilliseconds / timeoutMs) * 100);
+                    var progress = new DiscoveryProgressEventArgs(                        
+                        stopwatch.Elapsed,
+                        _discoveredCameras.Count
+                        );
+                    DiscoveryProgress?.Invoke(this, progress);
+                }
+
+                await Task.Delay(200, cancellationToken); // 0.2초마다 업데이트
+            }
+
+            // 완료 진행률
+            lock (_lockObject)
+            {
+                var finalProgress = new DiscoveryProgressEventArgs(
+                    stopwatch.Elapsed,
+                    _discoveredCameras.Count);
+                DiscoveryProgress?.Invoke(this, finalProgress);
+            }
+        }
+
+        /// <summary>
+        /// 지속적 응답 수신
         /// </summary>
         private async Task ReceiveResponsesAsync(CancellationToken cancellationToken)
         {
@@ -391,97 +560,82 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
                 {
                     try
                     {
-                        // 비동기적으로 UDP 응답 대기 (타임아웃 설정)
-                        var receiveTask = _udpClient.ReceiveAsync();
-                        var timeoutTask = Task.Delay(500, cancellationToken); // 500ms 타임아웃
+                        var result = await _udpClient.ReceiveAsync();
+                        Debug.WriteLine($"[CameraDiscovery] {result.RemoteEndPoint}에서 {result.Buffer.Length} 바이트 수신");
 
-                        var completedTask = await Task.WhenAny(receiveTask, timeoutTask);
-
-                        if (completedTask == receiveTask)
+                        var camera = ParseCameraResponse(result.Buffer, result.RemoteEndPoint);
+                        if (camera != null)
                         {
-                            var result = await receiveTask;
-                            var camera = ParseCameraResponse(result.Buffer, result.RemoteEndPoint);
-
-                            if (camera != null)
+                            lock (_lockObject)
                             {
-                                lock (_lockObject)
+                                // 중복 체크 (IP 기준)
+                                var existing = _discoveredCameras.FirstOrDefault(c =>
+                                    c.IpAddress.Equals(camera.IpAddress));
+
+                                if (existing != null)
                                 {
-                                    // 중복 체크 (IP 기준)
-                                    var existing = _discoveredCameras.FirstOrDefault(c =>
-                                        c.IpAddress.Equals(camera.IpAddress));
-
-                                    if (existing != null)
-                                    {
-                                        // 기존 정보 업데이트
-                                        existing.LastSeen = DateTime.Now;
-                                        existing.Status = camera.Status;
-                                    }
-                                    else
-                                    {
-                                        _discoveredCameras.Add(camera);
-                                    }
+                                    // 기존 정보 업데이트
+                                    existing.LastSeen = DateTime.Now;
+                                    existing.Status = camera.Status;
                                 }
-
-                                CameraDiscovered?.Invoke(this, new CameraDiscoveredEventArgs(camera, result.RemoteEndPoint));
-                                Debug.WriteLine($"[CameraDiscovery] 카메라 발견: {camera.IpAddressString} ({camera.MacAddress})");
+                                else
+                                {
+                                    _discoveredCameras.Add(camera);
+                                }
                             }
+
+                            CameraDiscovered?.Invoke(this, new CameraDiscoveredEventArgs(camera, result.RemoteEndPoint));
+                            Debug.WriteLine($"[CameraDiscovery] 카메라 발견: {camera.IpAddressString} ({camera.MacAddress})");
                         }
-                        // 타임아웃인 경우 루프 계속 진행
                     }
                     catch (ObjectDisposedException)
                     {
                         break; // UDP 클라이언트가 해제됨
                     }
-                    catch (SocketException ex)
+                    catch (SocketException ex) when (ex.SocketErrorCode == SocketError.Interrupted)
                     {
-                        Debug.WriteLine($"[CameraDiscovery] 소켓 오류: {ex.Message}");
-                        await Task.Delay(100, cancellationToken); // 잠시 대기 후 재시도
+                        break; // 정상적인 중단
                     }
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"[CameraDiscovery] 수신 오류: {ex.Message}");
-                        await Task.Delay(100, cancellationToken); // 잠시 대기 후 재시도
+                        await Task.Delay(100, cancellationToken); // 짧은 지연 후 재시도
                     }
                 }
             }
             catch (OperationCanceledException)
             {
                 // 정상적인 취소
-                Debug.WriteLine("[CameraDiscovery] 응답 수신이 취소되었습니다.");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[CameraDiscovery] 수신 루프 오류: {ex.Message}");
+                Debug.WriteLine($"[CameraDiscovery] 응답 수신 오류: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// 진행률 업데이트 (수정된 버전)
+        /// 진행률 업데이트
         /// </summary>
-        private async Task UpdateProgressAsync(Stopwatch stopwatch, TimeSpan? totalDuration)
+        private async Task UpdateProgressAsync(Stopwatch stopwatch, double? totalTimeoutMs)
         {
             try
             {
-                while (!_discoveryTokenSource?.Token.IsCancellationRequested == true)
+                //while (stopwatch.IsRunning)
+                while (stopwatch.IsRunning && (_discoveryTokenSource == null || !_discoveryTokenSource.Token.IsCancellationRequested))
                 {
-                    var elapsed = stopwatch.Elapsed;
-
-                    // 발견된 카메라 수를 포함한 진행률 이벤트
-                    int discoveredCount;
                     lock (_lockObject)
                     {
-                        discoveredCount = _discoveredCameras.Count;
+                        var progress = new DiscoveryProgressEventArgs(
+                            stopwatch.Elapsed, 
+                            _discoveredCameras.Count
+                            );
+                        DiscoveryProgress?.Invoke(this, progress);
                     }
+                    await Task.Delay(500); // 0.5초마다 업데이트
 
-                    var progress = new DiscoveryProgressEventArgs(elapsed, discoveredCount);
-                    DiscoveryProgress?.Invoke(this, progress);
-
-                    await Task.Delay(200, _discoveryTokenSource.Token); // 200ms마다 업데이트
+                    if (totalTimeoutMs.HasValue && stopwatch.ElapsedMilliseconds >= totalTimeoutMs.Value)
+                        break;
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                // 정상적인 취소
             }
             catch (Exception ex)
             {
@@ -534,9 +688,13 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
                     SerialNumber = string.IsNullOrWhiteSpace(serialNumber) ? "N/A" : serialNumber,
                     HttpPort = camera.http_port1 > 0 ? camera.http_port1 : 80,
                     RtspPort = camera.rtsp_port1 > 0 ? camera.rtsp_port1 : 554,
+                    HttpJpegPort = camera.httpjpegport > 0 ? camera.httpjpegport : 8080,
+                    PtzPort = camera.ptzport > 0 ? camera.ptzport : 0,
                     Version = camera.version.ToString(),
                     Status = CameraStatus.Online,
-                    LastSeen = DateTime.Now
+                    LastSeen = DateTime.Now,
+                    SubnetMask = new IPAddress(BitConverter.GetBytes(camera.ipMask)),
+                    Gateway = new IPAddress(BitConverter.GetBytes(camera.ipGateway))
                 };
 
                 return discoveredCamera;
@@ -594,8 +752,11 @@ namespace Waytotec.ControlSystem.Infrastructure.Services
         {
             try
             {
-                _udpClient?.Close();
-                _udpClient?.Dispose();
+                if (_udpClient == null)
+                    return;
+
+                _udpClient.Close();
+                _udpClient.Dispose();
                 _udpClient = null;
             }
             catch (Exception ex)

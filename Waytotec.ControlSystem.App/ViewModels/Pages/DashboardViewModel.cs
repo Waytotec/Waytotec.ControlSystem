@@ -53,22 +53,22 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
 
         public ObservableCollection<DeviceStatus> Devices { get; } = new();
         private readonly IDeviceService _deviceService;
-        private readonly ICameraService _cameraService;
+        // private readonly ICameraService _cameraService;
 
         public ObservableCollection<CameraInfo> Cameras { get; } = new();
         public IAsyncRelayCommand ScanCommand { get; }
 
         private string _title = "Waytotec Device Control System";
 
-        public DashboardViewModel(IDeviceService deviceService, ICameraService cameraService)
+        public DashboardViewModel(IDeviceService deviceService)
         {
             _deviceService = deviceService;
-            _cameraService = cameraService;
+            // _cameraService = cameraService;
 
             ScanCommand = new AsyncRelayCommand(ScanAsync, () => !IsScanning);
 
             // 카메라 발견 이벤트 구독
-            _cameraService.CameraFound += OnCameraFound;
+            // _cameraService.CameraFound += OnCameraFound;
 
             Debug.WriteLine("[DashboardViewModel] 생성자 완료, 이벤트 구독됨");
         }
@@ -120,14 +120,14 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                 ScanStatus = "카메라 검색 시작...";
 
                 // 스캔 시작
-                bool scanStarted = await _cameraService.StartScanAsync();
+                // bool scanStarted = await _cameraService.StartScanAsync();
 
-                if (!scanStarted)
-                {
-                    ScanStatus = "스캔 시작 실패";
-                    Debug.WriteLine("[DashboardViewModel] 스캔 시작 실패");
-                    return;
-                }
+                //if (!scanStarted)
+                //{
+                //    ScanStatus = "스캔 시작 실패";
+                //    Debug.WriteLine("[DashboardViewModel] 스캔 시작 실패");
+                //    return;
+                //}
 
                 Debug.WriteLine("[DashboardViewModel] 스캔 시작됨, 10초 대기");
                 ScanStatus = "카메라 검색 중... (0개 발견)";
@@ -139,7 +139,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                 await Task.WhenAll(scanTask, progressTask);
 
                 // 스캔 종료
-                await _cameraService.StopScanAsync();
+                // await _cameraService.StopScanAsync();
                 Debug.WriteLine("[DashboardViewModel] 스캔 종료됨");
 
                 ScanStatus = $"스캔 완료 - {Cameras.Count}개 발견";

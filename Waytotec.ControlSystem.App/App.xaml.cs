@@ -51,14 +51,12 @@ public partial class App : Application
             services.AddSingleton<CameraDiscoveryPage>();
             services.AddSingleton<CameraDiscoveryViewModel>();
 
-            // 카메라 검색 서비스 등록 (기존 ICameraService와 새로운 ICameraDiscoveryService 모두 구현)
-            services.AddSingleton<CameraService>();
+            // 카메라 검색 서비스 등록 (기존 ICameraService와 새로운 ICameraDiscoveryService 모두 구현)            
             //services.AddSingleton<ICameraService>(provider => provider.GetRequiredService<CameraService>());
             //services.AddSingleton<ICameraDiscoveryService>(provider => provider.GetRequiredService<CameraService>());
 
             services.AddSingleton<IDeviceService, MockDeviceService>();
-            // 또는 별도로 등록하려면:
-            services.AddSingleton<ICameraService, CameraService>();
+            // 또는 별도로 등록하려면:            
             services.AddSingleton<ICameraDiscoveryService, CameraDiscoveryService>();
 
 

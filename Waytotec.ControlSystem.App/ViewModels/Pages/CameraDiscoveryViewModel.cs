@@ -593,6 +593,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                 RefreshSelectedCommand.NotifyCanExecuteChanged();
                 ClearListCommand.NotifyCanExecuteChanged();
                 ExportCommand.NotifyCanExecuteChanged();
+                ExportSelectedCommand.NotifyCanExecuteChanged();
                 GenerateTestDataCommand.NotifyCanExecuteChanged();
             }
             if (e.PropertyName == nameof(Cameras))
@@ -756,6 +757,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             UnselectAllCommand.NotifyCanExecuteChanged();
             ToggleSelectAllCommand.NotifyCanExecuteChanged();
             ExportCommand.NotifyCanExecuteChanged();
+            ExportSelectedCommand.NotifyCanExecuteChanged();
         }
 
         // OnPropertyChanged 메서드 오버라이드 (IsAllSelected 변경 시 SelectAllButtonText 업데이트)
@@ -906,17 +908,24 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
 
                 if (saveFileDialog.ShowDialog() == true)
                 {
-                    var sb = new StringBuilder();
-                    sb.AppendLine("IP주소,MAC주소,시리얼번호,버전,상태,HTTP포트,RTSP포트");
+                    var extension = Path.GetExtension(saveFileDialog.FileName).ToLowerInvariant();
 
-                    foreach (var camera in SelectedCameras)
+                    switch (extension)
                     {
-                        sb.AppendLine($"{camera.IpAddressString},{camera.FormattedMacAddress}," +
-                                     $"{camera.SerialNumber},{camera.Version},{camera.StatusText}," +
-                                     $"{camera.HttpPort},{camera.RtspPort}");
+                        case ".csv":
+                            ExportToCsv(saveFileDialog.FileName);
+                            break;
+                        case ".xlsx":
+                            ExportToExcel(saveFileDialog.FileName);
+                            break;
+                        case ".txt":
+                            ExportToText(saveFileDialog.FileName);
+                            break;
+                        default:
+                            ExportToCsv(saveFileDialog.FileName);
+                            break;
                     }
 
-                    File.WriteAllText(saveFileDialog.FileName, sb.ToString(), Encoding.UTF8);
                     StatusMessage = $"선택된 카메라 목록 저장 완료: {Path.GetFileName(saveFileDialog.FileName)}";
                 }
             }
@@ -926,6 +935,62 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                 Debug.WriteLine($"[CameraDiscovery] 선택된 카메라 파일 저장 오류: {ex}");
             }
         }
+
+        private void ExportToCsv(string fileName)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("순번,IP주소,MAC주소,시리얼번호,버전,상태,HTTP포트,RTSP포트,마지막확인");
+
+            int index = 1;
+            foreach (var camera in SelectedCameras.OrderBy(c => c.IpAddressAsUInt))
+            {
+                sb.AppendLine($"{index++}," +
+                             $"\"{camera.IpAddressString}\"," +
+                             $"\"{camera.FormattedMacAddress}\"," +
+                             $"\"{camera.SerialNumber}\"," +
+                             $"\"{camera.Version}\"," +
+                             $"\"{camera.StatusText}\"," +
+                             $"{camera.HttpPort}," +
+                             $"{camera.RtspPort}," +
+                             $"\"{camera.LastSeen:yyyy-MM-dd HH:mm:ss}\"");
+            }
+
+            File.WriteAllText(fileName, sb.ToString(), Encoding.UTF8);
+        }
+
+        // 🆕 새로운 메서드: 텍스트 내보내기
+        private void ExportToText(string fileName)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"선택된 카메라 목록 - {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine($"총 {SelectedCameras.Count}대");
+            sb.AppendLine(new string('=', 60));
+            sb.AppendLine();
+
+            int index = 1;
+            foreach (var camera in SelectedCameras.OrderBy(c => c.IpAddressAsUInt))
+            {
+                sb.AppendLine($"[{index++:D2}] {camera.IpAddressString}");
+                sb.AppendLine($"     MAC: {camera.FormattedMacAddress}");
+                sb.AppendLine($"     S/N: {camera.SerialNumber}");
+                sb.AppendLine($"     Ver: {camera.Version}");
+                sb.AppendLine($"     상태: {camera.StatusText}");
+                sb.AppendLine($"     포트: HTTP:{camera.HttpPort}, RTSP:{camera.RtspPort}");
+                sb.AppendLine($"     확인: {camera.LastSeen:yyyy-MM-dd HH:mm:ss}");
+                sb.AppendLine();
+            }
+
+            File.WriteAllText(fileName, sb.ToString(), Encoding.UTF8);
+        }
+
+        // 간단한 CSV 형태로 Excel 호환 파일 생성
+        private void ExportToExcel(string fileName)
+        {            
+            // 실제 Excel 라이브러리 사용시 더 정교한 구현 가능
+            // 실제 구현 필요....
+            ExportToCsv(fileName);
+        }
+
 
         /// <summary>
         /// PowerShell을 이용한 Ping Shell 시작
