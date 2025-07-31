@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -23,12 +25,115 @@ namespace Waytotec.ControlSystem.App.Views.Pages
 
             InitializeComponent();
             Unloaded += HandleUnloaded;
+            // ViewModel의 선택된 카메라 컬렉션 변경 이벤트 구독
+            ViewModel.SelectedCameras.CollectionChanged += OnViewModelSelectedCamerasChanged;
+
+            // ViewModel의 속성 변경 이벤트 구독 (전체 선택 상태 변경 감지용)
+            ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         }
 
         private void HandleUnloaded(object sender, RoutedEventArgs e)
         {
             RtspViewer.Stop();            
             Unloaded -= HandleUnloaded;
+        }
+        // <summary>
+        /// ViewModel의 선택된 카메라 컬렉션이 변경될 때 DataGrid 선택 상태 업데이트
+        /// </summary>
+        private void OnViewModelSelectedCamerasChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (CameraDataGrid == null) return;
+
+            // DataGrid 선택 변경 이벤트를 일시적으로 비활성화
+            CameraDataGrid.SelectionChanged -= CameraDataGrid_SelectionChanged;
+
+            try
+            {
+                switch (e.Action)
+                {
+                    case NotifyCollectionChangedAction.Add:
+                        if (e.NewItems != null)
+                        {
+                            foreach (DiscoveredCamera camera in e.NewItems)
+                            {
+                                if (!CameraDataGrid.SelectedItems.Contains(camera))
+                                {
+                                    CameraDataGrid.SelectedItems.Add(camera);
+                                }
+                            }
+                        }
+                        break;
+
+                    case NotifyCollectionChangedAction.Remove:
+                        if (e.OldItems != null)
+                        {
+                            foreach (DiscoveredCamera camera in e.OldItems)
+                            {
+                                CameraDataGrid.SelectedItems.Remove(camera);
+                            }
+                        }
+                        break;
+
+                    case NotifyCollectionChangedAction.Reset:
+                        CameraDataGrid.SelectedItems.Clear();
+                        break;
+                }
+            }
+            finally
+            {
+                // DataGrid 선택 변경 이벤트 다시 활성화
+                CameraDataGrid.SelectionChanged += CameraDataGrid_SelectionChanged;
+            }
+        }
+
+        /// <summary>
+        /// ViewModel 속성 변경 이벤트 핸들러
+        /// </summary>
+        private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ViewModel.IsAllSelected))
+            {
+                UpdateDataGridSelection();
+            }
+        }
+
+        /// <summary>
+        /// DataGrid 선택 상태를 ViewModel과 동기화
+        /// </summary>
+        private void UpdateDataGridSelection()
+        {
+            if (CameraDataGrid == null) return;
+
+            // 선택 변경 이벤트를 일시적으로 비활성화
+            CameraDataGrid.SelectionChanged -= CameraDataGrid_SelectionChanged;
+
+            try
+            {
+                if (ViewModel.IsAllSelected)
+                {
+                    // 전체 선택
+                    CameraDataGrid.SelectAll();
+                }
+                else if (ViewModel.SelectedCameras.Count == 0)
+                {
+                    // 전체 선택 해제
+                    CameraDataGrid.UnselectAll();
+                }
+                else
+                {
+                    // 개별 항목 선택
+                    CameraDataGrid.SelectedItems.Clear();
+                    foreach (var camera in ViewModel.SelectedCameras)
+                    {
+                        CameraDataGrid.SelectedItems.Add(camera);
+                    }
+                }
+            }
+            finally
+            {
+                // 선택 변경 이벤트 다시 활성화
+                CameraDataGrid.SelectionChanged += CameraDataGrid_SelectionChanged;
+            }
         }
 
         /// <summary>
@@ -104,23 +209,44 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         /// </summary>
         private void CameraDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // SelectedItems와 ViewModel의 SelectedCameras 동기화
-                if (sender is DataGrid dataGrid)
+            if (ViewModel == null) return;
+
+            // ViewModel의 컬렉션 변경 이벤트를 일시적으로 비활성화
+            ViewModel.SelectedCameras.CollectionChanged -= OnViewModelSelectedCamerasChanged;
+            try
             {
-                // 추가된 항목들
-                foreach (DiscoveredCamera camera in e.AddedItems)
+                // 제거된 항목들 처리
+                if (e.RemovedItems != null)
                 {
-                    if (!ViewModel.SelectedCameras.Contains(camera))
+                    foreach (DiscoveredCamera camera in e.RemovedItems)
                     {
-                        ViewModel.SelectedCameras.Add(camera);
+                        ViewModel.SelectedCameras.Remove(camera);
                     }
                 }
 
-                // 제거된 항목들
-                foreach (DiscoveredCamera camera in e.RemovedItems)
+                // 추가된 항목들 처리
+                if (e.AddedItems != null)
                 {
-                    ViewModel.SelectedCameras.Remove(camera);
+                    foreach (DiscoveredCamera camera in e.AddedItems)
+                    {
+                        if (!ViewModel.SelectedCameras.Contains(camera))
+                        {
+                            ViewModel.SelectedCameras.Add(camera);
+                        }
+                    }
                 }
+
+                // 단일 선택 속성도 업데이트
+                ViewModel.SelectedCamera = CameraDataGrid.SelectedItem as DiscoveredCamera;
+
+                // 전체 선택 상태 업데이트를 위해 명령 상태 갱신
+                ViewModel.SelectAllCommand.NotifyCanExecuteChanged();
+                ViewModel.UnselectAllCommand.NotifyCanExecuteChanged();
+            }
+            finally
+            {
+                // 컬렉션 변경 이벤트 다시 활성화
+                ViewModel.SelectedCameras.CollectionChanged += OnViewModelSelectedCamerasChanged;
 
                 // 상태 메시지 업데이트
                 if (ViewModel.SelectedCameras.Count > 0)
@@ -143,11 +269,6 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         /// </summary>
         private void CameraDataGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            //if (ViewModel.SelectedCamera != null)
-            //{
-            //    OpenWebInterface_Click(sender, e);
-            //}
-
             if (ViewModel.SelectedCamera != null)
             {
                 RtspViewer.Load(ip: ViewModel.SelectedCamera.IpAddressString, stream: "stream0");

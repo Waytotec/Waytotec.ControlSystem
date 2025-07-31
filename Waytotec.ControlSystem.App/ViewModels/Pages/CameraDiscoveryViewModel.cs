@@ -1,6 +1,7 @@
 ﻿// Waytotec.ControlSystem.App/ViewModels/Pages/CameraDiscoveryViewModel.cs
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -21,13 +22,10 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         private bool _disposed = false;
         private readonly Random _random = new();
 
-
         // 다중 선택을 위한 추가 속성들
         [ObservableProperty]
         private ObservableCollection<DiscoveredCamera> _selectedCameras = new();
-
-        [ObservableProperty]
-        private int _selectedCount = 0;
+                
 
         [ObservableProperty]
         private bool _isAllSelected = false;
@@ -35,6 +33,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         // 다중 선택 관련 명령들
         public IRelayCommand SelectAllCommand { get; }
         public IRelayCommand UnselectAllCommand { get; }
+        public IRelayCommand ToggleSelectAllCommand { get; }
         public IRelayCommand InvertSelectionCommand { get; }
         public IAsyncRelayCommand RefreshSelectedCamerasCommand { get; }
         public IRelayCommand CopySelectedToClipboardCommand { get; }
@@ -111,6 +110,17 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         // 컬렉션 뷰 (필터링 및 정렬용)
         public ICollectionView CamerasView { get; }
 
+        /// <summary>
+        /// 선택된 카메라 개수 속성
+        /// </summary>
+        public int SelectedCount => SelectedCameras?.Count ?? 0;
+
+        /// <summary>
+        /// 전체 선택 버튼 텍스트 (바인딩용)
+        /// </summary>
+        public string SelectAllButtonText => IsAllSelected ? "선택 해제" : "전체 선택";
+
+
         // 정렬 옵션
         public List<string> SortOptions { get; } = new()
         {
@@ -123,6 +133,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
 
             // 컬렉션 뷰 설정
             BindingOperations.EnableCollectionSynchronization(Cameras, _camerasLock);
+            BindingOperations.EnableCollectionSynchronization(SelectedCameras, _camerasLock);
             CamerasView = CollectionViewSource.GetDefaultView(Cameras);
             CamerasView.Filter = FilterCameras;
             CamerasView.SortDescriptions.Add(new SortDescription("IpAddressString", ListSortDirection.Ascending));
@@ -144,6 +155,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             // 다중 선택 명령 초기화 추가
             SelectAllCommand = new RelayCommand(SelectAll, () => !IsScanning && Cameras.Count > 0);
             UnselectAllCommand = new RelayCommand(UnselectAll, () => SelectedCameras.Count > 0);
+            ToggleSelectAllCommand = new RelayCommand(ToggleSelectAll, () => Cameras.Count > 0);
             InvertSelectionCommand = new RelayCommand(InvertSelection, () => !IsScanning && Cameras.Count > 0);
             RefreshSelectedCamerasCommand = new AsyncRelayCommand(RefreshSelectedCamerasAsync, () => SelectedCameras.Count > 0 && !IsScanning);
             CopySelectedToClipboardCommand = new RelayCommand(CopySelectedToClipboard, () => SelectedCameras.Count > 0);
@@ -154,19 +166,22 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             _discoveryService.DiscoveryProgress += OnDiscoveryProgress;
             _discoveryService.DiscoveryCompleted += OnDiscoveryCompleted;
 
-            // SelectedCameras 컬렉션 변경 이벤트 구독
-            SelectedCameras.CollectionChanged += (s, e) =>
-            {
-                SelectedCount = SelectedCameras.Count;
-                IsAllSelected = SelectedCameras.Count == Cameras.Count && Cameras.Count > 0;
+            //// SelectedCameras 컬렉션 변경 이벤트 구독
+            //SelectedCameras.CollectionChanged += (s, e) =>
+            //{
+            //    SelectedCount = SelectedCameras.Count;
+            //    IsAllSelected = SelectedCameras.Count == Cameras.Count && Cameras.Count > 0;
 
-                // 명령 실행 가능 상태 업데이트
-                UnselectAllCommand.NotifyCanExecuteChanged();
-                RefreshSelectedCamerasCommand.NotifyCanExecuteChanged();
-                CopySelectedToClipboardCommand.NotifyCanExecuteChanged();
-                ExportSelectedCommand.NotifyCanExecuteChanged();
-            };
+            //    // 명령 실행 가능 상태 업데이트
+            //    UnselectAllCommand.NotifyCanExecuteChanged();
+            //    RefreshSelectedCamerasCommand.NotifyCanExecuteChanged();
+            //    CopySelectedToClipboardCommand.NotifyCanExecuteChanged();
+            //    ExportSelectedCommand.NotifyCanExecuteChanged();
+            //};
 
+            // 카메라 리스트 변경 시 전체 선택 상태 업데이트
+            Cameras.CollectionChanged += OnCamerasCollectionChanged;
+            SelectedCameras.CollectionChanged += OnSelectedCamerasChanged;
             // 속성 변경 감지
             PropertyChanged += OnPropertyChanged;
 
@@ -606,10 +621,26 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         /// </summary>
         private void SelectAll()
         {
-            SelectedCameras.Clear();
-            foreach (var camera in Cameras)
+            try
             {
-                SelectedCameras.Add(camera);
+                lock (_camerasLock)
+                {
+                    SelectedCameras.Clear();
+                    foreach (var camera in Cameras)
+                    {
+                        SelectedCameras.Add(camera);
+                    }
+                    IsAllSelected = true;
+                }
+
+                // 명령 상태 업데이트
+                SelectAllCommand.NotifyCanExecuteChanged();
+                UnselectAllCommand.NotifyCanExecuteChanged();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"전체 선택 오류: {ex.Message}";
+                Debug.WriteLine($"[CameraDiscovery] 전체 선택 오류: {ex}");
             }
         }
 
@@ -618,8 +649,106 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         /// </summary>
         private void UnselectAll()
         {
-            SelectedCameras.Clear();
-            SelectedCamera = null;
+            try
+            {
+                lock (_camerasLock)
+                {
+                    SelectedCameras.Clear();
+                    IsAllSelected = false;
+                }
+
+                // 명령 상태 업데이트
+                SelectAllCommand.NotifyCanExecuteChanged();
+                UnselectAllCommand.NotifyCanExecuteChanged();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"전체 선택 해제 오류: {ex.Message}";
+                Debug.WriteLine($"[CameraDiscovery] 전체 선택 해제 오류: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// 전체 선택/해제 토글
+        /// </summary>
+        private void ToggleSelectAll()
+        {
+            if (IsAllSelected)
+            {
+                UnselectAll();
+            }
+            else
+            {
+                SelectAll();
+            }
+        }
+
+        /// <summary>
+        /// 카메라 컬렉션 변경 이벤트 핸들러
+        /// </summary>
+        private void OnCamerasCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            // 카메라 목록이 변경되면 전체 선택 상태 확인
+            UpdateSelectAllState();
+
+            // 명령 상태 업데이트
+            SelectAllCommand.NotifyCanExecuteChanged();
+            UnselectAllCommand.NotifyCanExecuteChanged();
+            ToggleSelectAllCommand.NotifyCanExecuteChanged();
+            // ExportCommand.NotifyCanExecuteChanged();
+        }
+
+        /// <summary>
+        /// 선택된 카메라 컬렉션 변경 이벤트 핸들러
+        /// </summary>
+        private void OnSelectedCamerasChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            UpdateSelectAllState();
+        }
+
+
+        /// <summary>
+        /// 전체 선택 상태 업데이트
+        /// </summary>
+        private void UpdateSelectAllState()
+        {
+            lock (_camerasLock)
+            {
+                if (Cameras.Count == 0)
+                {
+                    IsAllSelected = false;
+                }
+                else
+                {
+                    IsAllSelected = SelectedCameras.Count == Cameras.Count &&
+                                   Cameras.All(camera => SelectedCameras.Contains(camera));
+                }
+
+                if (Cameras.Count == SelectedCameras.Count)
+                {
+                    Debug.WriteLine("");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 개별 카메라 선택/해제
+        /// </summary>
+        private void ToggleCameraSelection(DiscoveredCamera camera)
+        {
+            if (camera == null) return;
+
+            lock (_camerasLock)
+            {
+                if (SelectedCameras.Contains(camera))
+                {
+                    SelectedCameras.Remove(camera);
+                }
+                else
+                {
+                    SelectedCameras.Add(camera);
+                }
+            }
         }
 
         /// <summary>
@@ -1023,6 +1152,18 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                 _discoveryService.DiscoveryProgress -= OnDiscoveryProgress;
                 _discoveryService.DiscoveryCompleted -= OnDiscoveryCompleted;
             }
+
+            // 컬렉션 이벤트 구독 해제
+            if (Cameras != null)
+            {
+                Cameras.CollectionChanged -= OnCamerasCollectionChanged;
+            }
+
+            if (SelectedCameras != null)
+            {
+                SelectedCameras.CollectionChanged -= OnSelectedCamerasChanged;
+            }
+            _refreshTimer?.Dispose();
 
             _ = Task.Run(async () =>
             {
