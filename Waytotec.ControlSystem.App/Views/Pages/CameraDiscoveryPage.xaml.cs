@@ -5,6 +5,7 @@ using System.Windows.Media;
 using Waytotec.ControlSystem.App.ViewModels.Pages;
 using Waytotec.ControlSystem.Core.Models;
 using Wpf.Ui.Abstractions.Controls;
+using WpfWaytotec.ControlSystem.App.Effects;
 
 namespace Waytotec.ControlSystem.App.Views.Pages
 {
@@ -14,13 +15,20 @@ namespace Waytotec.ControlSystem.App.Views.Pages
     public partial class CameraDiscoveryPage : INavigableView<CameraDiscoveryViewModel>
     {
         public CameraDiscoveryViewModel ViewModel { get; }
-
+        
         public CameraDiscoveryPage(CameraDiscoveryViewModel viewModel)
         {
             ViewModel = viewModel;
             DataContext = ViewModel;
 
             InitializeComponent();
+            Unloaded += HandleUnloaded;
+        }
+
+        private void HandleUnloaded(object sender, RoutedEventArgs e)
+        {
+            RtspViewer.Stop();            
+            Unloaded -= HandleUnloaded;
         }
 
         /// <summary>
@@ -49,45 +57,6 @@ namespace Waytotec.ControlSystem.App.Views.Pages
 
                 // 간단한 알림 (실제로는 Snackbar 등을 사용)
                 MessageBox.Show("클립보드에 복사되었습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
-
-        /// <summary>
-        /// 알림 메시지 표시 (간단한 구현)
-        /// </summary>
-        private void ShowNotification(string message)
-        {
-            // 실제 프로덕션에서는 Snackbar나 Toast 알림을 사용하는 것이 좋습니다
-            MessageBox.Show(message, "알림", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        /// <summary>
-        /// 웹 인터페이스 열기
-        /// </summary>
-        private void OpenWebInterface_Click(object sender, RoutedEventArgs e)
-        {
-            if (ViewModel.SelectedCamera != null)
-            {
-                try
-                {
-                    var camera = ViewModel.SelectedCamera;
-                    var url = $"http://{camera.IpAddressString}:{camera.HttpPort}";
-
-                    // 기본 브라우저로 웹 인터페이스 열기
-                    var startInfo = new ProcessStartInfo
-                    {
-                        FileName = url,
-                        UseShellExecute = true
-                    };
-
-                    Process.Start(startInfo);
-
-                    // ShowNotification($"웹 인터페이스 열기: {url}");
-                }
-                catch (Exception ex)
-                {
-                    ShowNotification($"웹 인터페이스 열기 실패: {ex.Message}");
-                }
             }
         }
 

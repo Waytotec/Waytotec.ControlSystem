@@ -1,13 +1,16 @@
 ﻿using System.Windows.Input;
+using Waytotec.ControlSystem.App.Effects;
 using Waytotec.ControlSystem.App.ViewModels.Pages;
 using Waytotec.ControlSystem.Core.Models;
 using Wpf.Ui.Abstractions.Controls;
+using WpfWaytotec.ControlSystem.App.Effects;
 
 namespace Waytotec.ControlSystem.App.Views.Pages
 {
     public partial class DashboardPage : INavigableView<DashboardViewModel>
     {
         public DashboardViewModel ViewModel { get; }
+        private SnowflakeEffect? _snowflake;
 
         public DashboardPage(DashboardViewModel viewModel)
         {
@@ -15,12 +18,22 @@ namespace Waytotec.ControlSystem.App.Views.Pages
             DataContext = ViewModel;
 
             InitializeComponent();
-            this.Unloaded += DashboardPage_Unloaded;
+            Loaded += HandleLoaded;
+            Unloaded += HandleUnloaded;
         }
 
-        private void DashboardPage_Unloaded(object sender, RoutedEventArgs e)
+        private void HandleLoaded(object sender, RoutedEventArgs e)
+        {
+            _snowflake ??= new(MainCanvas, 300);            
+            _snowflake.Start();
+        }
+        private void HandleUnloaded(object sender, RoutedEventArgs e)
         {
             RtspViewer.Stop();
+            _snowflake?.Stop();
+            _snowflake = null;
+            // Loaded -= HandleLoaded;
+            // Unloaded -= HandleUnloaded;
         }
 
         private void CameraGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)

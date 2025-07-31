@@ -14,7 +14,7 @@
       d:DesignWidth="800"
       ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-      Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+      Foreground="{DynamicResource TextFillColorPrimaryBrush}"      
       mc:Ignorable="d">
 
     <Page.Resources>
@@ -24,6 +24,7 @@
 
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="200" />
             <RowDefinition Height="3*" />
             <RowDefinition Height="2*" />
         </Grid.RowDefinitions>
@@ -32,8 +33,60 @@
             <ColumnDefinition Width="2*" />
         </Grid.ColumnDefinitions>
 
+        <!-- 눈내리는 효과-->
+        <Grid Grid.Row="0" Height="200" 
+              ClipToBounds="True"
+              Grid.ColumnSpan="2">
+            <Grid>
+                <Rectangle VerticalAlignment="Bottom" Height="200" RadiusX="8" RadiusY="8" Panel.ZIndex="0">
+                    <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="{DynamicResource SnowflakeGradientTop}" Offset="0"/>
+                            <GradientStop Color="{DynamicResource SnowflakeGradientBottom}" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Panel.ZIndex="1">
+                        <ui:SymbolIcon 
+                            x:Name="MainSymbolIcon" 
+                            FontSize="100"
+                            Symbol="Symbols20"/>
+                        <TextBlock 
+                            x:Name="MainTitle"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"                        
+                            FontSize="28"       
+                            Text="MainPage"
+                            FontWeight="Black"/>
+                    </StackPanel>
+
+                    <TextBlock  
+                        Grid.Column="1"
+                        HorizontalAlignment="Center"
+                        Margin="20"
+                        Foreground="{DynamicResource TextControlPlaceholderForeground}" 
+                        FontSize="12" 
+                        Panel.ZIndex="-1"
+                        TextWrapping="Wrap">
+                        WPF UI provides the Fluent experience in your known and loved WPF framework. Intuitive design, themes, navigation and new immersive controls. All natively and effortlessly. Library changes the base elements like Page, ToggleButton or List, and also includes additional controls like Navigation, NumberBox, Dialog or Snackbar.
+                        <LineBreak />
+                        <LineBreak />
+                        Support the development of WPF UI and other innovative projects by becoming a sponsor on GitHub! Your monthly or one-time contributions help us continue to deliver high-quality, open-source solutions that empower developers worldwide.
+                    </TextBlock>
+                </Grid>
+
+                <Canvas x:Name="MainCanvas" Panel.ZIndex="2"/>
+            </Grid>
+        </Grid>
+
         <!--  장비 리스트  -->
-        <Grid Grid.Row="0" Grid.Column="0" Margin="10">
+        <Grid Grid.Row="1" Grid.Column="0" Margin="10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -81,7 +134,7 @@
         </Grid>
 
         <!--  영상 영역  -->
-        <Border Grid.Row="0"
+        <Border Grid.Row="1"
                 Grid.Column="1"
                 Margin="10"
                 Background="Black"
@@ -91,7 +144,7 @@
         </Border>
 
         <!--  제어 버튼  -->
-        <StackPanel Grid.Row="1"
+        <StackPanel Grid.Row="2"
                     Grid.Column="0"
                     Margin="10"
                     Orientation="Vertical">
@@ -132,7 +185,7 @@
         </StackPanel>
 
         <!--  LPR UTIL 메뉴  -->
-        <GroupBox Grid.Row="1"
+        <GroupBox Grid.Row="2"
                   Grid.Column="1"
                   Margin="10"
                   Header="LPR UTIL 4.2 관련 메뉴창">

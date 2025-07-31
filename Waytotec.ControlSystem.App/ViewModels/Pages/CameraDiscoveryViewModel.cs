@@ -104,6 +104,10 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         public IAsyncRelayCommand GenerateTestDataCommand { get; }
 
 
+        public IRelayCommand PingShellCommand { get; }
+        public IRelayCommand OpenWebConfigShellCommand { get; }
+
+
         // 컬렉션 뷰 (필터링 및 정렬용)
         public ICollectionView CamerasView { get; }
 
@@ -134,6 +138,8 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             ExportCommand = new RelayCommand(ExportToFile, () => Cameras.Count > 0);
             FilterCommand = new RelayCommand(ApplyFilter);
             GenerateTestDataCommand = new AsyncRelayCommand(GenerateTestDataAsync, () => !IsScanning);
+            PingShellCommand = new RelayCommand(PingShellStart);
+            OpenWebConfigShellCommand = new RelayCommand(OpenWebConfigShellStart);
 
             // 다중 선택 명령 초기화 추가
             SelectAllCommand = new RelayCommand(SelectAll, () => !IsScanning && Cameras.Count > 0);
@@ -212,19 +218,6 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                     CancellationToken.None);
 
                 stopwatch.Stop();
-
-                // UI 스레드에서 결과 업데이트
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    lock (_camerasLock)
-                    {
-                        foreach (var camera in cameras)
-                        {
-                            Cameras.Add(camera);
-                        }
-                        DiscoveredCount = Cameras.Count;
-                    }
-                });
 
                 StatusMessage = $"검색 완료 - {cameras.Count()}대 발견 ({stopwatch.Elapsed.TotalSeconds:F1}초)";
                 DiscoveredCount = cameras.Count();
@@ -512,10 +505,39 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             Application.Current.Dispatcher.Invoke(() =>
             {
                 ElapsedTime = $"{e.ElapsedTime.Minutes:D2}:{e.ElapsedTime.Seconds:D2}";
+
                 if (ShowProgress)
                 {
-                    ScanProgress = Math.Min(e.ElapsedTime.TotalSeconds / 10.0 * 100, 100);
+                    // 시간 기반 진행률 계산 (10초 기준으로 100% 달성)
+                    double timeProgress = Math.Min(e.ElapsedTime.TotalSeconds / 10.0 * 100, 100);
+
+                    // 카메라 발견 수에 따른 추가 진행률 (발견될 때마다 조금씩 증가)
+                    double discoveryProgress = Math.Min(e.DiscoveredCount * 2, 20); // 최대 20% 추가
+
+                    // 전체 진행률 = 시간 진행률 + 발견 진행률
+                    ScanProgress = Math.Min(timeProgress + discoveryProgress, 100);
+
+                    // 95% 이상에서 멈춤 방지를 위한 로직
+                    if (e.ElapsedTime.TotalSeconds >= 9.5 && ScanProgress < 100)
+                    {
+                        ScanProgress = 100; // 마지막 0.5초에서 강제로 100% 완료
+                    }
+
+                    Debug.WriteLine($"[CameraDiscoveryViewModel] 진행률: {ScanProgress:F1}%, 시간: {e.ElapsedTime.TotalSeconds:F1}초, 발견: {e.DiscoveredCount}대");
                 }
+
+                // 상태 메시지 업데이트
+                if (e.DiscoveredCount > 0)
+                {
+                    StatusMessage = $"카메라 검색 중... ({e.DiscoveredCount}대 발견)";
+                }
+                else
+                {
+                    StatusMessage = "카메라 검색 중...";
+                }
+
+                // 발견된 카메라 수 업데이트
+                DiscoveredCount = e.DiscoveredCount;
             });
         }
 
@@ -722,13 +744,13 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                 if (saveFileDialog.ShowDialog() == true)
                 {
                     var sb = new StringBuilder();
-                    sb.AppendLine("ID,IP주소,MAC주소,시리얼번호,버전,상태,마지막확인,HTTP포트,RTSP포트");
+                    sb.AppendLine("IP주소,MAC주소,시리얼번호,버전,상태,HTTP포트,RTSP포트");
 
                     foreach (var camera in SelectedCameras)
                     {
-                        sb.AppendLine($"{camera.Id},{camera.IpAddressString},{camera.FormattedMacAddress}," +
+                        sb.AppendLine($"{camera.IpAddressString},{camera.FormattedMacAddress}," +
                                      $"{camera.SerialNumber},{camera.Version},{camera.StatusText}," +
-                                     $"{camera.LastSeen:yyyy-MM-dd HH:mm:ss},{camera.HttpPort},{camera.RtspPort}");
+                                     $"{camera.HttpPort},{camera.RtspPort}");
                     }
 
                     File.WriteAllText(saveFileDialog.FileName, sb.ToString(), Encoding.UTF8);
@@ -739,6 +761,67 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             {
                 StatusMessage = $"파일 저장 오류: {ex.Message}";
                 Debug.WriteLine($"[CameraDiscovery] 선택된 카메라 파일 저장 오류: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// PowerShell을 이용한 Ping Shell 시작
+        /// </summary>
+        private void PingShellStart()
+        {
+            if (SelectedCameras.Count == 0) return;
+
+            try
+            {
+                foreach (var camera in SelectedCameras)
+                {
+                    string scriptPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Scripts", "Ping_Shell.ps1");
+
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "powershell.exe",
+                        Arguments = $"-NoExit -ExecutionPolicy Bypass -File \"{scriptPath}\" -ip {camera.IpAddressString}",
+                        UseShellExecute = true,
+                        WindowStyle = ProcessWindowStyle.Normal,
+                    };
+
+                    Process.Start(psi);
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Ping Test 실행 오류: {ex.Message}";
+                Debug.WriteLine($"[PingShellStart] Ping Test 실행 오류: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// 기본 웹브라우저를 이용한 카메라 웹 인터페이스 열기 
+        /// </summary>
+        private void OpenWebConfigShellStart()
+        {
+            if (SelectedCameras.Count == 0) return;
+
+            try
+            {
+                foreach (var camera in SelectedCameras)
+                {
+                    var url = $"http://{camera.IpAddressString}:{camera.HttpPort}";
+
+                    // 기본 브라우저로 웹 인터페이스 열기
+                    var startInfo = new ProcessStartInfo
+                    {
+                        FileName = url,
+                        UseShellExecute = true
+                    };
+
+                    Process.Start(startInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"웹 인터페이스 실행 오류: {ex.Message}";
+                Debug.WriteLine($"[OpenWebConfigShellStart] 웹 인터페이스 실행 오류: {ex}");
             }
         }
 
@@ -909,6 +992,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             {
                 Id = $"Camera_{index:D3}",
                 IpAddress = ipAddress,
+                IpAddressString = ipAddress.ToString(),
                 MacAddress = macAddress,
                 SerialNumber = serialNumber,
                 Version = version,

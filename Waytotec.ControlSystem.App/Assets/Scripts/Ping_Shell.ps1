@@ -36,7 +36,7 @@ while ($true) {
         }
     } elseif ($failedLine) {
         # 실패 시 빨간색으로 표시
-        Write-Host $failedLine -ForegroundColor Red
+        Write-Host $ip $failedLine -ForegroundColor Red
     } else {
         # 기타 응답은 흰색으로 표시
         Write-Host $resultString -ForegroundColor White
