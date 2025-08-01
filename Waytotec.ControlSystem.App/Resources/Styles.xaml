@@ -62,28 +62,68 @@
         </Setter>
     </Style>
 
+    <!--  ui:NavigationViewItemSeparator  -->
+
     <!--  NavigationViewItemSeparator 커스텀 스타일  -->
     <Style TargetType="{x:Type ui:NavigationViewItemSeparator}">
         <Setter Property="Height" Value="1" />
-        <Setter Property="Margin" Value="16,8,16,8" />
-        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Margin" Value="0,8,0,8" />
         <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ui:NavigationViewItemSeparator}">
                     <Grid>
-                        <Rectangle Height="{TemplateBinding Height}" HorizontalAlignment="Stretch">
-                            <Rectangle.Fill>
-                                <SolidColorBrush Opacity="0.2" Color="{DynamicResource ControlStrokeColorDefault}" />
-                            </Rectangle.Fill>
-                            <Rectangle.OpacityMask>
+                        <!--  부드러운 그라데이션 배경  -->
+                        <Border
+                            Height="32"
+                            Margin="0,-16,0,-16"
+                            VerticalAlignment="Center">
+                            <Border.Background>
+                                <RadialGradientBrush Center="0.5,0.5" RadiusX="1" RadiusY="0.2">
+                                    <!--  DynamicResource로 테마에 따라 색상 변경  -->
+                                    <GradientStop Offset="0" Color="{DynamicResource ControlStrokeColorDefault}" />
+                                    <GradientStop Offset="1" Color="Transparent" />
+                                </RadialGradientBrush>
+                            </Border.Background>
+                            <Border.Opacity>
+                                <!--  테마에 따라 투명도 조정  -->
+                                <Binding Path="ActualTheme" RelativeSource="{RelativeSource AncestorType=Window}">
+                                    <Binding.Converter>
+                                        <conv:ThemeToOpacityConverter />
+                                    </Binding.Converter>
+                                </Binding>
+                            </Border.Opacity>
+                            <Border.OpacityMask>
                                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                     <GradientStop Offset="0" Color="Transparent" />
-                                    <GradientStop Offset="0.08" Color="#40FFFFFF" />
-                                    <GradientStop Offset="0.92" Color="#40FFFFFF" />
+                                    <GradientStop Offset="0.1" Color="Black" />
+                                    <GradientStop Offset="0.9" Color="Black" />
                                     <GradientStop Offset="1" Color="Transparent" />
                                 </LinearGradientBrush>
-                            </Rectangle.OpacityMask>
+                            </Border.OpacityMask>
+                        </Border>
+
+                        <!--  얇은 중앙선  -->
+                        <Rectangle
+                            Height="1"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Offset="0" Color="Transparent" />
+                                    <GradientStop Offset="0.1" Color="{DynamicResource ControlStrokeColorDefault}" />
+                                    <GradientStop Offset="0.9" Color="{DynamicResource ControlStrokeColorDefault}" />
+                                    <GradientStop Offset="1" Color="Transparent" />
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                            <Rectangle.Opacity>
+                                <Binding Path="ActualTheme" RelativeSource="{RelativeSource AncestorType=Window}">
+                                    <Binding.Converter>
+                                        <conv:ThemeToLineOpacityConverter />
+                                    </Binding.Converter>
+                                </Binding>
+                            </Rectangle.Opacity>
                         </Rectangle>
                     </Grid>
                 </ControlTemplate>

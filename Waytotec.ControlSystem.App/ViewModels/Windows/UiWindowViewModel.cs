@@ -12,9 +12,10 @@ namespace Waytotec.ControlSystem.App.ViewModels.Windows
         [ObservableProperty]
         private ObservableCollection<object> _menuItems = new()
         {
+            new NavigationViewItemSeparator(),
             new NavigationViewItem()
             {
-                Content = "Home",
+                Content = "홈",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
                 TargetPageType = typeof(Views.Pages.DashboardPage)
             },
@@ -24,19 +25,19 @@ namespace Waytotec.ControlSystem.App.ViewModels.Windows
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Camera28 },                
                 TargetPageType = typeof(Views.Pages.CameraDiscoveryPage)
             },
-            new NavigationViewItemSeparator(),
             new NavigationViewItem()
             {
-                Content = "Manual",
+                Content = "LPR Util",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Iot24},
+                TargetPageType = typeof(Views.Pages.ManualPage)
+            },
+            new NavigationViewItem()
+            {
+                Content = "메뉴얼",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Document24},
                 TargetPageType = typeof(Views.Pages.ManualPage)
             },
-            //new NavigationViewItem()
-            //{
-            //    Content = "Data",
-            //    Icon = new SymbolIcon { Symbol = SymbolRegular.DataHistogram24 },
-            //    TargetPageType = typeof(Views.Pages.DataPage)
-            //}
+            new NavigationViewItemSeparator(),
         };
 
         [ObservableProperty]
@@ -45,11 +46,17 @@ namespace Waytotec.ControlSystem.App.ViewModels.Windows
             new NavigationViewItemSeparator(),
             new NavigationViewItem()
             {
-                Content = "Settings",
+                Content = "프로그램 설정",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
+                TargetPageType = typeof(Views.Pages.SettingsPage),                
+            },
+            new NavigationViewItem()
+            {
+                Content = "프로그램 정보",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Info24 },
                 TargetPageType = typeof(Views.Pages.SettingsPage),
                 Margin = new System.Windows.Thickness(0, 0, 0, 20)
-            }
+            },
         };
 
         [ObservableProperty]
