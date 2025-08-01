@@ -35,6 +35,7 @@ namespace Waytotec.ControlSystem.App.Views
             SetPageService(navigationViewPageProvider);
             navigationService.SetNavigationControl(RootNavigation);
             contentDialogService.SetDialogHost(RootContentDialog);
+            snackbarService.SetSnackbarPresenter(SnackbarPresenter);
         }
 
 

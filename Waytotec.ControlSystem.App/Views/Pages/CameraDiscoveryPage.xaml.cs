@@ -6,8 +6,12 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Waytotec.ControlSystem.App.ViewModels.Pages;
 using Waytotec.ControlSystem.Core.Models;
+using Wpf.Ui;
 using Wpf.Ui.Abstractions.Controls;
+using Wpf.Ui.Controls;
+using Wpf.Ui.Extensions;
 using WpfWaytotec.ControlSystem.App.Effects;
+using DataGrid = Wpf.Ui.Controls.DataGrid;
 
 namespace Waytotec.ControlSystem.App.Views.Pages
 {
@@ -17,10 +21,16 @@ namespace Waytotec.ControlSystem.App.Views.Pages
     public partial class CameraDiscoveryPage : INavigableView<CameraDiscoveryViewModel>
     {
         public CameraDiscoveryViewModel ViewModel { get; }
-        
-        public CameraDiscoveryPage(CameraDiscoveryViewModel viewModel)
+        private ISnackbarService _snackbar;
+        private readonly IContentDialogService _dialogService;
+
+        public CameraDiscoveryPage(CameraDiscoveryViewModel viewModel,
+                                   ISnackbarService snackbar,
+                                   IContentDialogService dialogService)
         {
             ViewModel = viewModel;
+            _snackbar = snackbar;
+            _dialogService = dialogService;
             DataContext = ViewModel;
 
             InitializeComponent();
@@ -153,13 +163,18 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         /// </summary>
         private void CopyToClipboard_Click(object sender, RoutedEventArgs e)
         {
-            if (ViewModel.SelectedCameras.Count > 0)
+            int selectedCount = ViewModel.SelectedCameras.Count;
+            if (selectedCount > 0)
             {
                 if (ViewModel.CopySelectedToClipboardCommand.CanExecute(null))
                 {
                     ViewModel.CopySelectedToClipboardCommand.Execute(null);
                     e.Handled = true;
                 }
+                _snackbar.Show($"{selectedCount} 건의 카메라 정보가 클립보드에 복사되었습니다.", "내용 복사", 
+                    ControlAppearance.Success,
+                    new SymbolIcon(SymbolRegular.Info28),
+                    TimeSpan.FromSeconds(3));
             }
             else if (ViewModel.SelectedCamera != null)
             {
@@ -173,7 +188,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
                 Clipboard.SetText(text);
 
                 // 간단한 알림 (실제로는 Snackbar 등을 사용)
-                MessageBox.Show("클립보드에 복사되었습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Wpf.Ui.Controls.MessageBox.Show("클립보드에 복사되었습니다.", "알림", Wpf.Ui.Controls.MessageBoxButton.Primary, MessageBoxImage.Information);
             }
         }
 
@@ -283,10 +298,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
             }
         }
 
-        /// <summary>
-        /// DataGrid 키보드 이벤트 처리
-        /// </summary>
-        private void CameraDataGrid_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        private async void CameraDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             var dataGrid = sender as DataGrid;
             if (dataGrid == null) return;
@@ -351,13 +363,35 @@ namespace Waytotec.ControlSystem.App.Views.Pages
                     case System.Windows.Input.Key.Delete:
                         if (ViewModel.SelectedCameras.Count > 0)
                         {
-                            var result = MessageBox.Show(
-                                $"선택된 {ViewModel.SelectedCameras.Count}대 카메라를 목록에서 제거하시겠습니까?",
-                                "카메라 제거 확인",
-                                MessageBoxButton.YesNo,
-                                MessageBoxImage.Question);
+                            ContentDialogResult result2 = await _dialogService.ShowSimpleDialogAsync(
+                                new SimpleContentDialogCreateOptions()
+                                {
+                                    Title = $"선택된 {ViewModel.SelectedCameras.Count}대 카메라를 목록에서 제거하시겠습니까?",
+                                    Content = "카메라 제거 확인",
+                                    PrimaryButtonText = "예",
+                                    CloseButtonText = "아니오",
+                                });
 
-                            if (result == MessageBoxResult.Yes)
+                            if (result2 == ContentDialogResult.Primary)
+                            {
+                                RemoveSelectedCameras();
+                                e.Handled = true;
+                            }
+
+                            var uiMessageBox = new Wpf.Ui.Controls.MessageBox
+                            {
+                                IsPrimaryButtonEnabled = true,
+                                Owner = Application.Current.MainWindow,
+                                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                                PrimaryButtonText = "예",
+                                CloseButtonText = "아니오",
+                                Title = "선택 카메라 제거",
+                                Content = $"선택된 {ViewModel.SelectedCameras.Count}대 카메라를 목록에서 제거하시겠습니까?",
+                            };
+                            
+                            var result = await uiMessageBox.ShowDialogAsync();
+
+                            if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
                             {
                                 RemoveSelectedCameras();
                                 e.Handled = true;
@@ -436,5 +470,6 @@ namespace Waytotec.ControlSystem.App.Views.Pages
             var popup = new RtspPopupWindow(ip, stream);
             popup.Show();
         }
+
     }
 }
