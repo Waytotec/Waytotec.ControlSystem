@@ -158,26 +158,10 @@
                             Margin="0,0,10,10"
                             Padding="12,8"
                             Appearance="Secondary"
-                            Command="{Binding RefreshSelectedCommand}"
-                            Content="선택 새로고침"
-                            Icon="{ui:SymbolIcon ArrowClockwise24}" />
-
-                        <ui:Button
-                            Margin="0,0,10,10"
-                            Padding="12,8"
-                            Appearance="Secondary"
                             Command="{Binding ClearListCommand}"
                             Content="목록 지우기"
                             Icon="{ui:SymbolIcon Delete24}"
                             IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBooleanConverter}}" />
-
-                        <ui:Button
-                            Margin="0,0,10,10"
-                            Padding="12,8"
-                            Appearance="Secondary"
-                            Command="{Binding ExportSelectedCommand}"
-                            Content="내보내기"
-                            Icon="{ui:SymbolIcon DocumentArrowDown24}" />
                     </WrapPanel>
 
                     <!--  필터 및 검색 설정  -->
@@ -529,9 +513,17 @@
                         <ui:DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem
-                                    Command="{Binding RefreshSelectedCommand}"
-                                    Header="새로고침"
-                                    Icon="{ui:SymbolIcon ArrowClockwise24}" />
+                                    Command="{Binding ExportSelectedCommand}"
+                                    Header="파일로 내보내기"
+                                    Icon="{ui:SymbolIcon Symbol=SaveArrowRight24}" />
+                                <MenuItem
+                                    Command="{Binding PingShellCommand}"
+                                    Header="핑 테스트"
+                                    Icon="{ui:SymbolIcon Symbol=PlugConnectedCheckmark20}" />
+                                <MenuItem
+                                    Command="{Binding OpenWebConfigShellCommand}"
+                                    Header="웹 페이지"
+                                    Icon="{ui:SymbolIcon Symbol=DocumentPageBottomCenter24}" />
                                 <Separator />
                                 <MenuItem Header="정렬">
                                     <MenuItem
@@ -548,18 +540,14 @@
                                         Header="상태로 정렬" />
                                     <MenuItem
                                         Command="{Binding SortCommand}"
-                                        CommandParameter="마지막확인"
-                                        Header="마지막 확인순 정렬" />
+                                        CommandParameter="시리얼번호"
+                                        Header="시리얼번호로 정렬" />
                                 </MenuItem>
                                 <Separator />
                                 <MenuItem
                                     Click="CopyToClipboard_Click"
                                     Header="클립보드에 복사"
                                     Icon="{ui:SymbolIcon Copy24}" />
-                                <MenuItem
-                                    Command="{Binding ExportSelectedCommand}"
-                                    Header="파일로 내보내기"
-                                    Icon="{ui:SymbolIcon DocumentArrowDown24}" />
                             </ContextMenu>
                         </ui:DataGrid.ContextMenu>
                     </ui:DataGrid>
@@ -612,14 +600,15 @@
                     <ui:Button
                         Margin="0,0,10,10"
                         Padding="12,8"
-                        Appearance="Info"
                         Command="{Binding ToggleSelectAllCommand}"
                         Content="{Binding SelectAllButtonText}"
                         Icon="{ui:SymbolIcon Symbol=SelectAllOn24}"
                         ToolTip="DataGrid의 모든 항목을 선택하거나 선택 해제합니다" />
                     <ui:InfoBadge
-                        Margin="0,0,10,10"
+                        Margin="-20,-40,0,0"
+                        HorizontalAlignment="Left"
                         VerticalAlignment="Center"
+                        Severity="Caution"
                         Visibility="{Binding SelectedCount, Converter={StaticResource CountToVisibilityConverter}}"
                         Value="{Binding SelectedCount}" />
                     <ui:Button
@@ -632,13 +621,13 @@
                         Margin="0,0,10,10"
                         Padding="12,8"
                         Command="{Binding PingShellCommand}"
-                        Content="Ping테스트"
+                        Content="핑 테스트"
                         Icon="{ui:SymbolIcon Symbol=PlugConnectedCheckmark20}" />
                     <ui:Button
                         Margin="0,0,10,10"
                         Padding="12,8"
                         Command="{Binding OpenWebConfigShellCommand}"
-                        Content="웹페이지"
+                        Content="웹 페이지"
                         Icon="{ui:SymbolIcon Symbol=DocumentPageBottomCenter24}" />
                     <ui:Button
                         Margin="0,0,10,10"
