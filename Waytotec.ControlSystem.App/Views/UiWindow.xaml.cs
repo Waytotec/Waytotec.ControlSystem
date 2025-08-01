@@ -1,4 +1,5 @@
 ﻿using Waytotec.ControlSystem.App.ViewModels.Windows;
+using Waytotec.ControlSystem.App.Views.Pages;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
@@ -10,11 +11,17 @@ namespace Waytotec.ControlSystem.App.Views
     {
         private readonly SettingsService _settingsService;
         public UiWindowViewModel ViewModel { get; }
+        
+        private bool _isUserClosedPane;
+
+        private bool _isPaneOpenedOrClosedFromCode;
 
         public UiWindow(
             UiWindowViewModel viewModel,
             INavigationViewPageProvider navigationViewPageProvider,
             INavigationService navigationService,
+            ISnackbarService snackbarService,
+            IContentDialogService contentDialogService,
             SettingsService settingsService
             )
         {
@@ -27,6 +34,7 @@ namespace Waytotec.ControlSystem.App.Views
 
             SetPageService(navigationViewPageProvider);
             navigationService.SetNavigationControl(RootNavigation);
+            contentDialogService.SetDialogHost(RootContentDialog);
         }
 
 
@@ -74,6 +82,50 @@ namespace Waytotec.ControlSystem.App.Views
         public void SetServiceProvider(IServiceProvider serviceProvider)
         {
             throw new NotImplementedException();
+        }
+
+        private void FluentWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (_isUserClosedPane)
+            {
+                return;
+            }
+
+            _isPaneOpenedOrClosedFromCode = true;
+            RootNavigation.SetCurrentValue(NavigationView.IsPaneOpenProperty, e.NewSize.Width > 1200);
+            _isPaneOpenedOrClosedFromCode = false;
+        }
+
+        private void RootNavigation_PaneClosed(NavigationView sender, RoutedEventArgs args)
+        {
+            if(_isPaneOpenedOrClosedFromCode)
+                return;
+
+            _isUserClosedPane = true;
+        }
+
+        private void RootNavigation_PaneOpened(NavigationView sender, RoutedEventArgs args)
+        {
+            if (_isPaneOpenedOrClosedFromCode)
+                return;
+
+            _isUserClosedPane = false;
+        }
+
+        private void RootNavigation_SelectionChanged(NavigationView sender, RoutedEventArgs args)
+        {
+            if (sender is not Wpf.Ui.Controls.NavigationView navigationView)
+            {
+                return;
+            }
+
+            RootNavigation.SetCurrentValue(
+                NavigationView.HeaderVisibilityProperty,
+                navigationView.SelectedItem?.TargetPageType == typeof(SettingsPage) ||
+                navigationView.SelectedItem?.TargetPageType == typeof(DashboardPage)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+            );
         }
     }
 }

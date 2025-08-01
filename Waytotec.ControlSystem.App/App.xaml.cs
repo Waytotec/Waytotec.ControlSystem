@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Localization;
 using System.IO;
 using System.Windows.Threading;
 using Waytotec.ControlSystem.App.Services;
@@ -59,7 +60,8 @@ public partial class App : Application
             // 또는 별도로 등록하려면:            
             services.AddSingleton<ICameraDiscoveryService, CameraDiscoveryService>();
 
-
+            services.AddSingleton<ISnackbarService, SnackbarService>();
+            services.AddSingleton<IContentDialogService, ContentDialogService>();
 
             // SettingsService 등록
             var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Waytotec");

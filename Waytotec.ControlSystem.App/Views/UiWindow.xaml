@@ -17,8 +17,10 @@
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ExtendsContentIntoTitleBar="True"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-    WindowBackdropType="Acrylic"
-    WindowCornerPreference="Round"    
+    SizeChanged="FluentWindow_SizeChanged"
+    WindowBackdropType="Mica"
+    WindowCornerPreference="Default"
+    WindowStartupLocation="CenterScreen"
     WindowState="Normal"
     mc:Ignorable="d">
     <Grid>
@@ -42,17 +44,20 @@
             IsPaneToggleVisible="True"
             MenuItemsSource="{Binding ViewModel.MenuItems, Mode=OneWay}"
             OpenPaneLength="150"
+            PaneClosed="RootNavigation_PaneClosed"
             PaneDisplayMode="Left"
+            PaneOpened="RootNavigation_PaneOpened"
             ScrollViewer.CanContentScroll="False"
             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
             ScrollViewer.IsDeferredScrollingEnabled="False"
             ScrollViewer.VerticalScrollBarVisibility="Disabled"
-            TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}">
+            SelectionChanged="RootNavigation_SelectionChanged"
+            TitleBar="{Binding ElementName=TitleBar, Mode=OneWay}"
+            Transition="FadeInWithSlide">
             <!--  상단 헤더 삭제  -->
-            <!--<ui:NavigationView.Header>
-                <ui:BreadcrumbBar x:Name="BreadcrumbBar"
-                                  Margin="42,32,42,20" />
-            </ui:NavigationView.Header>-->
+            <ui:NavigationView.Header>
+                <ui:BreadcrumbBar x:Name="BreadcrumbBar" Margin="42,32,42,20" />
+            </ui:NavigationView.Header>
             <ui:NavigationView.ContentOverlay>
                 <Grid>
                     <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
