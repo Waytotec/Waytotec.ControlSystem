@@ -3,12 +3,12 @@
     x:Class="Waytotec.ControlSystem.App.Views.Pages.CameraDiscoveryPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Waytotec.ControlSystem.App.Views.Controls"
     xmlns:conv="clr-namespace:Waytotec.ControlSystem.App.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Waytotec.ControlSystem.App.Views.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    xmlns:controls="clr-namespace:Waytotec.ControlSystem.App.Views.Controls"
     Title="카메라 검색3"
     d:DataContext="{d:DesignInstance local:CameraDiscoveryPage,
                                      IsDesignTimeCreatable=False}"
@@ -40,7 +40,7 @@
             <conv:GroupBoxContentHeightConverter x:Key="GroupBoxContentHeightConverter" />
 
             <conv:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
-            
+
 
             <!--  DataGrid 행 스타일 - 상태별 배경색 적용  -->
             <Style x:Key="StatusRowStyle" TargetType="DataGridRow">
@@ -48,13 +48,13 @@
                 <Setter Property="BorderBrush" Value="{Binding Status, Converter={StaticResource StatusToBorderConverter}}" />
                 <Setter Property="BorderThickness" Value="0,0,0,1" />
                 <Style.Triggers>
-                    <!-- 선택된 행 스타일 -->
+                    <!--  선택된 행 스타일  -->
                     <Trigger Property="IsSelected" Value="True">
                         <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
                         <Setter Property="BorderBrush" Value="{DynamicResource SystemControlHighlightAccentBrush}" />
                         <Setter Property="BorderThickness" Value="2" />
                     </Trigger>
-                    <!-- 마우스 오버 스타일 -->
+                    <!--  마우스 오버 스타일  -->
                     <Trigger Property="IsMouseOver" Value="True">
                         <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
                     </Trigger>
@@ -67,20 +67,23 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="DataGridCell">
                             <Grid Background="{TemplateBinding Background}">
-                                <StackPanel Orientation="Horizontal" 
-                                          HorizontalAlignment="Center" 
-                                          VerticalAlignment="Center">
-                                    <!-- 상태 아이콘 -->
-                                    <TextBlock Text="{Binding Status, Converter={StaticResource StatusToIconConverter}}"
-                                             Foreground="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
-                                             FontSize="16"
-                                             FontWeight="Bold"
-                                             Margin="0,0,8,0" />
-                                    <!-- 상태 텍스트 -->
-                                    <TextBlock Text="{Binding StatusText}"
-                                             Foreground="{Binding Status, Converter={StaticResource StatusToTextColorConverter}}"
-                                             FontWeight="SemiBold"
-                                             FontSize="12" />
+                                <StackPanel
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal">
+                                    <!--  상태 아이콘  -->
+                                    <TextBlock
+                                        Margin="0,0,8,0"
+                                        FontSize="16"
+                                        FontWeight="Bold"
+                                        Foreground="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
+                                        Text="{Binding Status, Converter={StaticResource StatusToIconConverter}}" />
+                                    <!--  상태 텍스트  -->
+                                    <TextBlock
+                                        FontSize="12"
+                                        FontWeight="SemiBold"
+                                        Foreground="{Binding Status, Converter={StaticResource StatusToTextColorConverter}}"
+                                        Text="{Binding StatusText}" />
                                 </StackPanel>
                             </Grid>
                         </ControlTemplate>
@@ -109,72 +112,72 @@
                     <!--  검색 버튼들  -->
                     <WrapPanel Margin="0,0,0,15">
                         <ui:Button
-            Margin="0,0,10,10"
-            Padding="12,8"
-            Command="{Binding ScanCommand}"
-            Content="전체 검색"
-            Icon="{ui:SymbolIcon Search24}"
-            IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBooleanConverter}}" />
+                            Margin="0,0,10,10"
+                            Padding="12,8"
+                            Command="{Binding ScanCommand}"
+                            Content="전체 검색"
+                            Icon="{ui:SymbolIcon Search24}"
+                            IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBooleanConverter}}" />
 
                         <ui:Button
-            Margin="0,0,10,10"
-            Padding="12,8"
-            Command="{Binding StartContinuousScanCommand}"
-            Content="실시간 검색"
-            Icon="{ui:SymbolIcon Play24}"
-            IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBooleanConverter}}" />
+                            Margin="0,0,10,10"
+                            Padding="12,8"
+                            Command="{Binding StartContinuousScanCommand}"
+                            Content="실시간 검색"
+                            Icon="{ui:SymbolIcon Play24}"
+                            IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBooleanConverter}}" />
 
                         <ui:Button
-            Margin="0,0,10,10"
-            Padding="12,8"
-            Appearance="Danger"
-            Command="{Binding StopScanCommand}"
-            Content="검색 중지"
-            Icon="{ui:SymbolIcon Stop24}"
-            IsEnabled="{Binding IsScanning}" />
+                            Margin="0,0,10,10"
+                            Padding="12,8"
+                            Appearance="Danger"
+                            Command="{Binding StopScanCommand}"
+                            Content="검색 중지"
+                            Icon="{ui:SymbolIcon Stop24}"
+                            IsEnabled="{Binding IsScanning}" />
 
                         <ui:Button
-            Margin="0,0,10,10"
-            Padding="12,8"
-            Appearance="Success"
-            Command="{Binding GenerateTestDataCommand}"
-            Content="테스트 데이터"
-            Icon="{ui:SymbolIcon Beaker24}"
-            ToolTip="실제 카메라가 없을 때 100건의 테스트 데이터를 생성합니다" />
+                            Margin="0,0,10,10"
+                            Padding="12,8"
+                            Appearance="Success"
+                            Command="{Binding GenerateTestDataCommand}"
+                            Content="테스트 데이터"
+                            Icon="{ui:SymbolIcon Beaker24}"
+                            ToolTip="실제 카메라가 없을 때 100건의 테스트 데이터를 생성합니다" />
 
                         <ui:Button
-            Margin="0,0,10,10"
-            Padding="12,8"
-            Appearance="Secondary"
-            Command="{Binding ScanRangeCommand}"
-            Content="대역 검색"
-            Icon="{ui:SymbolIcon Globe24}"
-            IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBooleanConverter}}" />
+                            Margin="0,0,10,10"
+                            Padding="12,8"
+                            Appearance="Secondary"
+                            Command="{Binding ScanRangeCommand}"
+                            Content="대역 검색"
+                            Icon="{ui:SymbolIcon Globe24}"
+                            IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBooleanConverter}}" />
 
                         <ui:Button
-            Margin="0,0,10,10"
-            Padding="12,8"
-            Appearance="Secondary"
-            Command="{Binding RefreshSelectedCommand}"
-            Content="선택 새로고침"
-            Icon="{ui:SymbolIcon ArrowClockwise24}" />
+                            Margin="0,0,10,10"
+                            Padding="12,8"
+                            Appearance="Secondary"
+                            Command="{Binding RefreshSelectedCommand}"
+                            Content="선택 새로고침"
+                            Icon="{ui:SymbolIcon ArrowClockwise24}" />
 
                         <ui:Button
-            Margin="0,0,10,10"
-            Padding="12,8"
-            Appearance="Secondary"
-            Command="{Binding ClearListCommand}"
-            Content="목록 지우기"
-            Icon="{ui:SymbolIcon Delete24}"
-            IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBooleanConverter}}" />
+                            Margin="0,0,10,10"
+                            Padding="12,8"
+                            Appearance="Secondary"
+                            Command="{Binding ClearListCommand}"
+                            Content="목록 지우기"
+                            Icon="{ui:SymbolIcon Delete24}"
+                            IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBooleanConverter}}" />
 
                         <ui:Button
-            Margin="0,0,10,10"
-            Padding="12,8"
-            Appearance="Secondary"
-            Command="{Binding ExportSelectedCommand}"
-            Content="내보내기"
-            Icon="{ui:SymbolIcon DocumentArrowDown24}" />
+                            Margin="0,0,10,10"
+                            Padding="12,8"
+                            Appearance="Secondary"
+                            Command="{Binding ExportSelectedCommand}"
+                            Content="내보내기"
+                            Icon="{ui:SymbolIcon DocumentArrowDown24}" />
                     </WrapPanel>
 
                     <!--  필터 및 검색 설정  -->
@@ -187,50 +190,50 @@
 
                         <!--  필터 영역  -->
                         <GroupBox
-            Grid.Column="0"
-            Header="필터"
-            Style="{StaticResource ModernGroupBoxStyle}">
+                            Grid.Column="0"
+                            Header="필터"
+                            Style="{StaticResource ModernGroupBoxStyle}">
                             <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                                 <ui:TextBox
-                    Width="250"
-                    Margin="0,0,5,0"
-                    PlaceholderText="IP, MAC, 시리얼번호 검색..."
-                    Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+                                    Width="250"
+                                    Margin="0,0,5,0"
+                                    PlaceholderText="IP, MAC, 시리얼번호 검색..."
+                                    Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
 
                                 <CheckBox
-                    Margin="0,0,5,0"
-                    Content="온라인만 표시"
-                    IsChecked="{Binding ShowOnlineOnly}" />
+                                    Margin="0,0,5,0"
+                                    Content="온라인만 표시"
+                                    IsChecked="{Binding ShowOnlineOnly}" />
                                 <CheckBox Content="오프라인만 표시" IsChecked="{Binding ShowOfflineOnly}" />
                             </StackPanel>
                         </GroupBox>
 
                         <!--  대역 검색 설정  -->
                         <GroupBox
-            Grid.Column="2"
-            Header="대역 설정"
-            Style="{StaticResource ModernGroupBoxStyle}">
+                            Grid.Column="2"
+                            Header="대역 설정"
+                            Style="{StaticResource ModernGroupBoxStyle}">
                             <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                                 <TextBlock
-                    Margin="0,0,8,0"
-                    VerticalAlignment="Center"
-                    Text="IP 대역:" />
+                                    Margin="0,0,8,0"
+                                    VerticalAlignment="Center"
+                                    Text="IP 대역:" />
                                 <ui:TextBox
-                    Width="130"
-                    Margin="0,0,5,0"
-                    VerticalAlignment="Center"
-                    Text="{Binding NetworkRange}" />
+                                    Width="130"
+                                    Margin="0,0,5,0"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding NetworkRange}" />
                                 <TextBlock
-                    Margin="0,0,5,0"
-                    VerticalAlignment="Center"
-                    Text="/" />
+                                    Margin="0,0,5,0"
+                                    VerticalAlignment="Center"
+                                    Text="/" />
                                 <ui:NumberBox
-                    Width="130"
-                    VerticalAlignment="Center"
-                    Maximum="255"
-                    Minimum="8"
-                    SpinButtonPlacementMode="Inline"
-                    Value="{Binding NetworkMask}" />
+                                    Width="130"
+                                    VerticalAlignment="Center"
+                                    Maximum="255"
+                                    Minimum="8"
+                                    SpinButtonPlacementMode="Inline"
+                                    Value="{Binding NetworkMask}" />
                             </StackPanel>
                         </GroupBox>
                     </Grid>
@@ -240,9 +243,9 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="10"/>
-                <ColumnDefinition/>
+                <ColumnDefinition />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
@@ -250,45 +253,45 @@
             </Grid.RowDefinitions>
             <!--  중앙 영역 - 카메라 목록 (스크롤 가능)  -->
             <GroupBox
-                Grid.Column="0"
                 Grid.Row="0"
-                Header="검색된 카메라 목록"                
+                Grid.Column="0"
+                Header="검색된 카메라 목록"
                 Style="{StaticResource ModernGroupBoxStyle}">
-                <Grid                       
-MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType={x:Type GroupBox}}, Converter={StaticResource GroupBoxContentHeightConverter}}"                    
-HorizontalAlignment="Stretch"
-VerticalAlignment="Stretch">
+                <Grid
+                    MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType={x:Type GroupBox}}, Converter={StaticResource GroupBoxContentHeightConverter}}"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch">
                     <!--  DataGrid와 진행률 표시를 위한 Grid  -->
-                    <ui:DataGrid                                                                        
-    Name="CameraDataGrid"
-    AutoGenerateColumns="False"                        
-    BorderThickness="0"
-    CanUserAddRows="False"
-    CanUserDeleteRows="False"
-    CanUserReorderColumns="True"
-    CanUserResizeColumns="True"
-    CanUserSortColumns="True"                    
-    HeadersVisibility="Column"
-    GridLinesVisibility="Horizontal"                        
-    VerticalAlignment="Stretch"
-    HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-    IsReadOnly="True"
-    ItemsSource="{Binding CamerasView}"
-    KeyDown="CameraDataGrid_KeyDown"
-    LoadingRow="CameraDataGrid_LoadingRow"
-    MouseDoubleClick="CameraDataGrid_MouseDoubleClick"                        
-    RowHeight="30"
-    ScrollViewer.CanContentScroll="True"
-    ScrollViewer.HorizontalScrollBarVisibility="Auto"
-    ScrollViewer.VerticalScrollBarVisibility="Auto"
-    SelectedItem="{Binding SelectedCamera}"
-    SelectionChanged="CameraDataGrid_SelectionChanged"
-    SelectionMode="Extended"                    
-    SelectionUnit="FullRow"
-    UnloadingRow="CameraDataGrid_UnloadingRow"
-    VirtualizingPanel.IsVirtualizing="True"
-    VirtualizingPanel.ScrollUnit="Pixel"
-    VirtualizingPanel.VirtualizationMode="Recycling">
+                    <ui:DataGrid
+                        Name="CameraDataGrid"
+                        VerticalAlignment="Stretch"
+                        AutoGenerateColumns="False"
+                        BorderThickness="0"
+                        CanUserAddRows="False"
+                        CanUserDeleteRows="False"
+                        CanUserReorderColumns="True"
+                        CanUserResizeColumns="True"
+                        CanUserSortColumns="True"
+                        GridLinesVisibility="Horizontal"
+                        HeadersVisibility="Column"
+                        HorizontalGridLinesBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                        IsReadOnly="True"
+                        ItemsSource="{Binding CamerasView}"
+                        KeyDown="CameraDataGrid_KeyDown"
+                        LoadingRow="CameraDataGrid_LoadingRow"
+                        MouseDoubleClick="CameraDataGrid_MouseDoubleClick"
+                        RowHeight="30"
+                        ScrollViewer.CanContentScroll="True"
+                        ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                        SelectedItem="{Binding SelectedCamera}"
+                        SelectionChanged="CameraDataGrid_SelectionChanged"
+                        SelectionMode="Extended"
+                        SelectionUnit="FullRow"
+                        UnloadingRow="CameraDataGrid_UnloadingRow"
+                        VirtualizingPanel.IsVirtualizing="True"
+                        VirtualizingPanel.ScrollUnit="Pixel"
+                        VirtualizingPanel.VirtualizationMode="Recycling">
 
                         <ui:DataGrid.Resources>
                             <!--  체크박스 컬럼을 위한 스타일  -->
@@ -345,38 +348,38 @@ VerticalAlignment="Stretch">
                         <ui:DataGrid.Columns>
                             <!--  체크박스 컬럼 (다중 선택용) - 새로 추가  -->
                             <DataGridTemplateColumn
-            Width="40"
-            CanUserSort="False"
-            Visibility="Hidden"
-            Header="☐">
+                                Width="40"
+                                CanUserSort="False"
+                                Header="☐"
+                                Visibility="Hidden">
                                 <DataGridTemplateColumn.HeaderTemplate>
                                     <DataTemplate>
                                         <CheckBox
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Command="{Binding DataContext.SelectAllCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-            IsChecked="{Binding DataContext.IsAllSelected, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-            Style="{StaticResource CenterCheckBox}"
-            ToolTip="모두 선택/해제" />
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Command="{Binding DataContext.SelectAllCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            IsChecked="{Binding DataContext.IsAllSelected, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            Style="{StaticResource CenterCheckBox}"
+                                            ToolTip="모두 선택/해제" />
                                     </DataTemplate>
                                 </DataGridTemplateColumn.HeaderTemplate>
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <CheckBox
-            Click="CheckBox_Click"
-            IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
-            Style="{StaticResource CenterCheckBox}" />
+                                            Click="CheckBox_Click"
+                                            IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}"
+                                            Style="{StaticResource CenterCheckBox}" />
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
                             <!--  ID 컬럼 (순번) - 정렬 비활성화  -->
                             <DataGridTextColumn
-            Width="50"
-            Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Header}"
-            CanUserSort="False"
-            Header="ID"
-            IsReadOnly="True">
+                                Width="50"
+                                Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=Header}"
+                                CanUserSort="False"
+                                Header="ID"
+                                IsReadOnly="True">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Center" />
@@ -390,11 +393,11 @@ VerticalAlignment="Stretch">
 
                             <!--  IP 주소 - IP 정렬 최적화  -->
                             <DataGridTextColumn
-            Width="110"
-            Binding="{Binding IpAddressString}"
-            CanUserSort="True"
-            Header="IP"
-            SortMemberPath="IpAddressAsUInt">
+                                Width="110"
+                                Binding="{Binding IpAddressString}"
+                                CanUserSort="True"
+                                Header="IP"
+                                SortMemberPath="IpAddressAsUInt">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Center" />
@@ -407,11 +410,11 @@ VerticalAlignment="Stretch">
 
                             <!--  MAC 주소 - MAC 정렬 최적화  -->
                             <DataGridTextColumn
-            Width="140"
-            Binding="{Binding FormattedMacAddress}"
-            CanUserSort="True"
-            Header="MAC"
-            SortMemberPath="MacAddress">
+                                Width="140"
+                                Binding="{Binding FormattedMacAddress}"
+                                CanUserSort="True"
+                                Header="MAC"
+                                SortMemberPath="MacAddress">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Center" />
@@ -424,11 +427,11 @@ VerticalAlignment="Stretch">
 
                             <!--  시리얼 번호 - 영숫자 정렬  -->
                             <DataGridTextColumn
-            Width="160"
-            Binding="{Binding SerialNumber}"
-            CanUserSort="True"
-            Header="SN"
-            SortMemberPath="SerialNumber">
+                                Width="160"
+                                Binding="{Binding SerialNumber}"
+                                CanUserSort="True"
+                                Header="SN"
+                                SortMemberPath="SerialNumber">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Center" />
@@ -441,12 +444,12 @@ VerticalAlignment="Stretch">
 
                             <!--  버전 - 버전 비교 정렬 최적화  -->
                             <DataGridTextColumn
-            Width="100"
-            Visibility="Hidden"
-            Binding="{Binding Version}"
-            CanUserSort="True"
-            Header="Version"
-            SortMemberPath="Version">
+                                Width="100"
+                                Binding="{Binding Version}"
+                                CanUserSort="True"
+                                Header="Version"
+                                SortMemberPath="Version"
+                                Visibility="Hidden">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Center" />
@@ -459,26 +462,26 @@ VerticalAlignment="Stretch">
 
                             <!--  상태 - 열거형 정렬 최적화  -->
                             <DataGridTemplateColumn
-            Width="80"
-            CanUserSort="True"
-            Header="Status"
-            SortMemberPath="Status">
+                                Width="80"
+                                CanUserSort="True"
+                                Header="Status"
+                                SortMemberPath="Status">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid HorizontalAlignment="Center">
                                             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                                 <Ellipse
-                    Width="10"
-                    Height="10"
-                    Margin="0,0,5,0"
-                    VerticalAlignment="Center"
-                    Fill="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
-                    ToolTip="{Binding StatusText}" />
+                                                    Width="10"
+                                                    Height="10"
+                                                    Margin="0,0,5,0"
+                                                    VerticalAlignment="Center"
+                                                    Fill="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
+                                                    ToolTip="{Binding StatusText}" />
                                                 <TextBlock
-                    VerticalAlignment="Center"
-                    FontSize="13"
-                    FontFamily="맑은 고딕"
-                    Text="{Binding StatusText}" />
+                                                    VerticalAlignment="Center"
+                                                    FontFamily="맑은 고딕"
+                                                    FontSize="13"
+                                                    Text="{Binding StatusText}" />
                                             </StackPanel>
                                         </Grid>
                                     </DataTemplate>
@@ -486,17 +489,17 @@ VerticalAlignment="Stretch">
                             </DataGridTemplateColumn>
 
                             <!--  포트 정보  -->
-                            <DataGridTemplateColumn 
-            Width="180"
-            CanUserSort="False"
-            Header="포트 정보">
+                            <DataGridTemplateColumn
+                                Width="180"
+                                CanUserSort="False"
+                                Header="포트 정보">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock VerticalAlignment="Center" Padding="5,0,0,0">
-            <Run FontWeight="Medium" Text="HTTP:" />
-            <Run Text="{Binding HttpPort}" />
-            <Run FontWeight="Medium" Text="  RTSP:" />
-            <Run Text="{Binding RtspPort}" />
+                                        <TextBlock Padding="5,0,0,0" VerticalAlignment="Center">
+                                            <Run FontWeight="Medium" Text="HTTP:" />
+                                            <Run Text="{Binding HttpPort}" />
+                                            <Run FontWeight="Medium" Text="  RTSP:" />
+                                            <Run Text="{Binding RtspPort}" />
                                         </TextBlock>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -526,68 +529,68 @@ VerticalAlignment="Stretch">
                         <ui:DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem
-                Command="{Binding RefreshSelectedCommand}"
-                Header="새로고침"
-                Icon="{ui:SymbolIcon ArrowClockwise24}" />
+                                    Command="{Binding RefreshSelectedCommand}"
+                                    Header="새로고침"
+                                    Icon="{ui:SymbolIcon ArrowClockwise24}" />
                                 <Separator />
                                 <MenuItem Header="정렬">
                                     <MenuItem
-                    Command="{Binding SortCommand}"
-                    CommandParameter="IP주소"
-                    Header="IP주소로 정렬" />
+                                        Command="{Binding SortCommand}"
+                                        CommandParameter="IP주소"
+                                        Header="IP주소로 정렬" />
                                     <MenuItem
-                    Command="{Binding SortCommand}"
-                    CommandParameter="MAC주소"
-                    Header="MAC주소로 정렬" />
+                                        Command="{Binding SortCommand}"
+                                        CommandParameter="MAC주소"
+                                        Header="MAC주소로 정렬" />
                                     <MenuItem
-                    Command="{Binding SortCommand}"
-                    CommandParameter="상태"
-                    Header="상태로 정렬" />
+                                        Command="{Binding SortCommand}"
+                                        CommandParameter="상태"
+                                        Header="상태로 정렬" />
                                     <MenuItem
-                    Command="{Binding SortCommand}"
-                    CommandParameter="마지막확인"
-                    Header="마지막 확인순 정렬" />
+                                        Command="{Binding SortCommand}"
+                                        CommandParameter="마지막확인"
+                                        Header="마지막 확인순 정렬" />
                                 </MenuItem>
                                 <Separator />
                                 <MenuItem
-                Click="CopyToClipboard_Click"
-                Header="클립보드에 복사"
-                Icon="{ui:SymbolIcon Copy24}" />
+                                    Click="CopyToClipboard_Click"
+                                    Header="클립보드에 복사"
+                                    Icon="{ui:SymbolIcon Copy24}" />
                                 <MenuItem
-                Command="{Binding ExportSelectedCommand}"
-                Header="파일로 내보내기"
-                Icon="{ui:SymbolIcon DocumentArrowDown24}" />
+                                    Command="{Binding ExportSelectedCommand}"
+                                    Header="파일로 내보내기"
+                                    Icon="{ui:SymbolIcon DocumentArrowDown24}" />
                             </ContextMenu>
                         </ui:DataGrid.ContextMenu>
                     </ui:DataGrid>
 
                     <!--  진행률 표시 오버레이  -->
                     <Border
-    Panel.ZIndex="10"
-    Style="{StaticResource ProgressOverlayStyle}"
-    Visibility="{Binding ShowProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        Panel.ZIndex="10"
+                        Style="{StaticResource ProgressOverlayStyle}"
+                        Visibility="{Binding ShowProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Grid>
                             <StackPanel
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Orientation="Vertical">
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Orientation="Vertical">
                                 <ui:ProgressRing
-                Width="60"
-                Height="60"
-                IsIndeterminate="False"
-                Progress="{Binding ScanProgress}" />
+                                    Width="60"
+                                    Height="60"
+                                    IsIndeterminate="False"
+                                    Progress="{Binding ScanProgress}" />
                                 <TextBlock
-                Margin="0,20,0,10"
-                HorizontalAlignment="Center"
-                FontSize="16"
-                FontWeight="Medium"
-                Foreground="White"
-                Text="{Binding StatusMessage}" />
+                                    Margin="0,20,0,10"
+                                    HorizontalAlignment="Center"
+                                    FontSize="16"
+                                    FontWeight="Medium"
+                                    Foreground="White"
+                                    Text="{Binding StatusMessage}" />
                                 <TextBlock
-                HorizontalAlignment="Center"
-                FontSize="24"
-                FontWeight="Bold"
-                Foreground="White">
+                                    HorizontalAlignment="Center"
+                                    FontSize="24"
+                                    FontWeight="Bold"
+                                    Foreground="White">
                                     <TextBlock.Text>
                                         <MultiBinding StringFormat="{}{0:F0}%">
                                             <Binding Path="ScanProgress" />
@@ -600,9 +603,9 @@ VerticalAlignment="Stretch">
                 </Grid>
             </GroupBox>
 
-            <StackPanel 
-                Grid.Column="0" 
-                Grid.Row="1" 
+            <StackPanel
+                Grid.Row="1"
+                Grid.Column="0"
                 Orientation="Horizontal">
                 <!--  검색 버튼들  -->
                 <WrapPanel Margin="0,5,0,0">
@@ -613,48 +616,47 @@ VerticalAlignment="Stretch">
                         Command="{Binding ToggleSelectAllCommand}"
                         Content="{Binding SelectAllButtonText}"
                         Icon="{ui:SymbolIcon Symbol=SelectAllOn24}"
-                        ToolTip="DataGrid의 모든 항목을 선택하거나 선택 해제합니다"/>
+                        ToolTip="DataGrid의 모든 항목을 선택하거나 선택 해제합니다" />
                     <ui:InfoBadge
                         Margin="0,0,10,10"
                         VerticalAlignment="Center"
-                        Value="{Binding SelectedCount}"
-                        Visibility="{Binding SelectedCount, Converter={StaticResource CountToVisibilityConverter}}" />
+                        Visibility="{Binding SelectedCount, Converter={StaticResource CountToVisibilityConverter}}"
+                        Value="{Binding SelectedCount}" />
                     <ui:Button
                         Margin="0,0,10,10"
                         Padding="12,8"
                         Command="{Binding ExportSelectedCommand}"
                         Content="내보내기"
-                        Icon="{ui:SymbolIcon Symbol=SaveArrowRight24}"/>
+                        Icon="{ui:SymbolIcon Symbol=SaveArrowRight24}" />
                     <ui:Button
                         Margin="0,0,10,10"
                         Padding="12,8"
                         Command="{Binding PingShellCommand}"
                         Content="Ping테스트"
-                        Icon="{ui:SymbolIcon Symbol=PlugConnectedCheckmark20}"/>
+                        Icon="{ui:SymbolIcon Symbol=PlugConnectedCheckmark20}" />
                     <ui:Button
                         Margin="0,0,10,10"
                         Padding="12,8"
                         Command="{Binding OpenWebConfigShellCommand}"
                         Content="웹페이지"
-                        Icon="{ui:SymbolIcon Symbol=DocumentPageBottomCenter24}"/>
+                        Icon="{ui:SymbolIcon Symbol=DocumentPageBottomCenter24}" />
                     <ui:Button
                         Margin="0,0,10,10"
                         Padding="12,8"
                         Command="{Binding ScanCommand}"
                         Content="재부팅"
-                        Icon="{ui:SymbolIcon Symbol=ArrowReset24}"/>
+                        Icon="{ui:SymbolIcon Symbol=ArrowReset24}" />
                 </WrapPanel>
             </StackPanel>
 
             <!--  영상 영역  -->
-            <GroupBox 
+            <GroupBox
                 Grid.Row="0"
                 Grid.RowSpan="2"
-                Grid.Column="2"            
+                Grid.Column="2"
                 Header="실시간 영상"
-                Style="{StaticResource ModernGroupBoxStyle}"
-                >
-                <controls:RtspVideoViewer 
+                Style="{StaticResource ModernGroupBoxStyle}">
+                <controls:RtspVideoViewer
                     x:Name="RtspViewer"
                     Background="Black"
                     MouseDoubleClick="RtspViewer_MouseDoubleClick" />
