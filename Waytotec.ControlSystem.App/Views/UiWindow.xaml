@@ -7,8 +7,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
-    Width="1100"
-    Height="700"
+    Width="1280"
+    Height="900"
     d:DataContext="{d:DesignInstance local:UiWindow,
                                      IsDesignTimeCreatable=True}"
     d:DesignHeight="450"
@@ -17,10 +17,9 @@
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     ExtendsContentIntoTitleBar="True"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-    WindowBackdropType="Mica"
-    WindowCornerPreference="Round"
-    WindowStartupLocation="CenterScreen"
-    WindowState="Maximized"
+    WindowBackdropType="Acrylic"
+    WindowCornerPreference="Round"    
+    WindowState="Normal"
     mc:Ignorable="d">
     <Grid>
         <ui:TitleBar
