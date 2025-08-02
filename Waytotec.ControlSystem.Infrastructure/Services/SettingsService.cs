@@ -14,20 +14,48 @@ public class SettingsService
 
     public void Load()
     {
-        if (!File.Exists(_filePath))
+        try
+        {
+            if (!File.Exists(_filePath))
+            {
+                Settings = new AppSettings();
+                Save();
+                return;
+            }
+
+            var json = File.ReadAllText(_filePath);
+            Settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+        }
+        catch (Exception)
         {
             Settings = new AppSettings();
             Save();
-            return;
         }
-
-        var json = File.ReadAllText(_filePath);
-        Settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
     }
 
     public void Save()
     {
-        var json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(_filePath, json);
+        //var json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
+        //File.WriteAllText(_filePath, json);
+        try
+        {
+            var json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+            var directory = Path.GetDirectoryName(_filePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllText(_filePath, json);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Settings save error: {ex.Message}");
+        }
     }
 }

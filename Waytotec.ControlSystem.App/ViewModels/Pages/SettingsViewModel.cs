@@ -1,5 +1,7 @@
-﻿using Wpf.Ui.Abstractions.Controls;
+﻿using System.Reflection;
+using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
 
 namespace Waytotec.ControlSystem.App.ViewModels.Pages
 {
@@ -9,10 +11,26 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
         private readonly SettingsService _settingsService;
 
         [ObservableProperty]
-        private string _appVersion = String.Empty;
+        private int _themeSelectedIndex = 1; // Dark 기본값
 
         [ObservableProperty]
-        private ApplicationTheme _currentTheme = ApplicationTheme.Unknown;
+        private int _backdropSelectedIndex = 1; // Mica 기본값
+
+        partial void OnThemeSelectedIndexChanged(int value)
+        {
+            var theme = value == 0 ? "Light" : "Dark";
+            _settingsService.Settings.Theme = theme;
+            _settingsService.Save();
+            ApplyTheme(theme);
+        }
+        partial void OnBackdropSelectedIndexChanged(int value)
+        {
+            var backdropTypes = new[] { "None", "Mica", "Acrylic", "Tabbed" };
+            var backdropType = backdropTypes[value];
+            _settingsService.Settings.WindowBackdropType = backdropType;
+            _settingsService.Save();
+            ApplyBackdrop(backdropType);
+        }
 
         public SettingsViewModel(SettingsService settingsService)
         {
@@ -31,38 +49,42 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
 
         private void InitializeViewModel()
         {
-            var theme = _settingsService.Settings.Theme == "Light" ? ApplicationTheme.Light : ApplicationTheme.Dark;
-            ApplicationThemeManager.Apply(theme);
+            // 설정 값에서 인덱스 설정
+            ThemeSelectedIndex = _settingsService.Settings.Theme == "Light" ? 0 : 1;
 
-            CurrentTheme = theme;
-            AppVersion = $"Device Control System - {GetAssemblyVersion()}";
+            var backdropTypes = new[] { "None", "Mica", "Acrylic", "Tabbed" };
+            BackdropSelectedIndex = Array.IndexOf(backdropTypes, _settingsService.Settings.WindowBackdropType);
+            if (BackdropSelectedIndex < 0) BackdropSelectedIndex = 1; // Mica 기본값
 
             _isInitialized = true;
         }
 
-        private string GetAssemblyVersion()
+
+        private void ApplyTheme(string theme)
         {
-            return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString()
-                ?? String.Empty;
+            var appTheme = theme == "Light" ? ApplicationTheme.Light : ApplicationTheme.Dark;
+            if (ApplicationThemeManager.GetAppTheme() == appTheme) return;
+            ApplicationThemeManager.Apply(appTheme);
         }
 
-        [RelayCommand]
-        private void OnChangeTheme(string parameter)
+        private void ApplyBackdrop(string backdropType)
         {
-            if (parameter == "theme_light")
+            var backdrop = backdropType switch
             {
-                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light);
-                CurrentTheme = Wpf.Ui.Appearance.ApplicationTheme.Light;
-                _settingsService.Settings.Theme = "Light";
-            }
-            else
-            {
-                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark);
-                CurrentTheme = Wpf.Ui.Appearance.ApplicationTheme.Dark;
-                _settingsService.Settings.Theme = "Dark";
-            }
+                "Mica" => WindowBackdropType.Mica,
+                "Acrylic" => WindowBackdropType.Acrylic,
+                "Tabbed" => WindowBackdropType.Tabbed,
+                _ => WindowBackdropType.None
+            };
 
-            _settingsService.Save();
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (Application.Current.MainWindow is Views.UiWindow mainWindow)
+                {
+                    mainWindow.ApplyBackdropType(backdropType);
+                }
+            });
         }
+
     }
 }

@@ -47,6 +47,8 @@ public partial class App : Application
             services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<ManualPage>();
             services.AddSingleton<ManualViewModel>();
+            services.AddSingleton<AboutPage>();
+            services.AddSingleton<AboutViewModel>();
 
             // 새로운 카메라 검색 관련 등록
             services.AddSingleton<CameraDiscoveryPage>();
@@ -62,6 +64,7 @@ public partial class App : Application
 
             services.AddSingleton<ISnackbarService, SnackbarService>();
             services.AddSingleton<IContentDialogService, ContentDialogService>();
+            services.AddSingleton<IAppMessagingService, AppMessagingService>();
 
             // SettingsService 등록
             var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Waytotec");
@@ -84,10 +87,7 @@ public partial class App : Application
 
         var splash = new SplashView();
         splash.Show();
-
-        var dashboard = Services.GetService<DashboardViewModel>();
-        await dashboard!.LoadDevicesAsync();
-
+        await Task.Delay(2000); // 실제 장비 상태 가져오는 시뮬레이션
         splash.Close();
 
         await _host.StartAsync();
@@ -135,10 +135,10 @@ public partial class App : Application
                 if (window is UiWindow uiWindow)
                 {
                     // 각 페이지의 RtspVideoViewer 정리
-                    var dashboardPage = Services.GetService<DashboardPage>();
-                    if (dashboardPage?.RtspViewer != null)
+                    var cameraDiscoveryPage = Services.GetService<CameraDiscoveryPage>();
+                    if (cameraDiscoveryPage?.RtspViewer != null)
                     {
-                        await dashboardPage.RtspViewer.StopAsync();
+                        await cameraDiscoveryPage.RtspViewer.StopAsync();
                     }
                 }
             }

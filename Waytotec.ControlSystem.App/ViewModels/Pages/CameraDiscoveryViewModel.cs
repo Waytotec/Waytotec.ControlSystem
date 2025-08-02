@@ -8,13 +8,16 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Windows.Data;
+using System.Windows.Media.Media3D;
+using Waytotec.ControlSystem.App.Services;
 using Waytotec.ControlSystem.Core.Interfaces;
 using Waytotec.ControlSystem.Core.Models;
 using Wpf.Ui.Abstractions.Controls;
+using Wpf.Ui.Controls;
 
 namespace Waytotec.ControlSystem.App.ViewModels.Pages
 {
-    public partial class CameraDiscoveryViewModel : ObservableObject, INavigationAware, IDisposable
+    public partial class CameraDiscoveryViewModel : BaseViewModel, INavigationAware, IDisposable
     {
         private readonly ICameraDiscoveryService _discoveryService;
         private readonly object _camerasLock = new();
@@ -127,7 +130,9 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             "IP주소", "MAC주소", "시리얼번호", "버전", "상태", "마지막확인"
         };
 
-        public CameraDiscoveryViewModel(ICameraDiscoveryService discoveryService)
+        public CameraDiscoveryViewModel(
+            ICameraDiscoveryService discoveryService,
+            IAppMessagingService messagingService) : base(messagingService)
         {
             _discoveryService = discoveryService;
 
@@ -234,8 +239,10 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
 
                 stopwatch.Stop();
 
-                StatusMessage = $"검색 완료 - {cameras.Count()}대 발견 ({stopwatch.Elapsed.TotalSeconds:F1}초)";
                 DiscoveredCount = cameras.Count();
+
+                StatusMessage = $"검색 완료 - {DiscoveredCount}대 발견 ({stopwatch.Elapsed.TotalSeconds:F1}초)";
+                ShowSnackbar($"({stopwatch.Elapsed.TotalSeconds:F1}초)", $"검색 완료: {DiscoveredCount}개 발견", ControlAppearance.Success);
                 ElapsedTime = $"{stopwatch.Elapsed.Minutes:D2}:{stopwatch.Elapsed.Seconds:D2}";
             }
             catch (Exception ex)
@@ -288,6 +295,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             catch (Exception ex)
             {
                 StatusMessage = $"중지 오류: {ex.Message}";
+                ShowSnackbar("StopScanAsync", $"[CameraDiscovery] 중지 오류: {ex}", ControlAppearance.Danger);
                 Debug.WriteLine($"[CameraDiscovery] 중지 오류: {ex}");
             }
         }
@@ -302,6 +310,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                 if (!IPAddress.TryParse(NetworkRange, out var baseIp))
                 {
                     StatusMessage = "잘못된 IP 주소 형식입니다.";
+                    ShowSnackbar("IP 확인", $"잘못된 IP 주소 형식입니다.", ControlAppearance.Caution);
                     return;
                 }
 
@@ -318,11 +327,13 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                 stopwatch.Stop();
 
                 StatusMessage = $"대역 검색 완료 - {cameras.Count()}대 발견 ({stopwatch.Elapsed.TotalSeconds:F1}초)";
+                ShowSnackbar("대역 검색 완료", $"대역 검색 완료 - {cameras.Count()}대 발견 ({stopwatch.Elapsed.TotalSeconds:F1}초)", ControlAppearance.Success);
                 DiscoveredCount = cameras.Count();
             }
             catch (Exception ex)
             {
                 StatusMessage = $"대역 검색 오류: {ex.Message}";
+                ShowSnackbar("대역 검색 오류", $"{ex.Message}", ControlAppearance.Danger);
                 Debug.WriteLine($"[CameraDiscovery] 대역 검색 오류: {ex}");
             }
             finally
@@ -445,11 +456,13 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
 
                     File.WriteAllText(saveFileDialog.FileName, sb.ToString(), Encoding.UTF8);
                     StatusMessage = $"파일 저장 완료: {Path.GetFileName(saveFileDialog.FileName)}";
+                    ShowSnackbar("저장 완료", $"파일 저장 완료: {Path.GetFileName(saveFileDialog.FileName)}", ControlAppearance.Success);
                 }
             }
             catch (Exception ex)
             {
                 StatusMessage = $"파일 저장 오류: {ex.Message}";
+                ShowSnackbar("대역 검색 오류", $"{ex.Message}", ControlAppearance.Danger);
                 Debug.WriteLine($"[CameraDiscovery] 파일 저장 오류: {ex}");
             }
         }
@@ -569,6 +582,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                     IsScanning = false;
                     ShowProgress = false;
                     StatusMessage = $"검색 완료 - {DiscoveredCount}대 발견";
+                    ShowSnackbar("검색 완료", $"검색 완료 - {DiscoveredCount}대 발견", ControlAppearance.Success);
                 }
             });
         }
@@ -883,10 +897,12 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
             {
                 Clipboard.SetText(sb.ToString());
                 StatusMessage = $"선택된 {SelectedCameras.Count}대 카메라 정보를 클립보드에 복사했습니다.";
+                ShowSnackbar("복사 완료", $"선택된 {SelectedCameras.Count}대 카메라 정보를 클립보드에 복사했습니다.", ControlAppearance.Success);
             }
             catch (Exception ex)
             {
                 StatusMessage = $"클립보드 복사 오류: {ex.Message}";
+                ShowSnackbar("복사 오류", $"클립보드 복사 오류: {ex.Message}", ControlAppearance.Danger);
             }
         }
 
@@ -927,11 +943,13 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
                     }
 
                     StatusMessage = $"선택된 카메라 목록 저장 완료: {Path.GetFileName(saveFileDialog.FileName)}";
+                    ShowSnackbar("저장 완료", $"선택된 카메라 목록 저장 완료: {Path.GetFileName(saveFileDialog.FileName)}", ControlAppearance.Success);
                 }
             }
             catch (Exception ex)
             {
                 StatusMessage = $"파일 저장 오류: {ex.Message}";
+                ShowSnackbar("저장 오류", $"파일 저장 오류: {ex.Message}", ControlAppearance.Danger);
                 Debug.WriteLine($"[CameraDiscovery] 선택된 카메라 파일 저장 오류: {ex}");
             }
         }
@@ -1132,12 +1150,14 @@ namespace Waytotec.ControlSystem.App.ViewModels.Pages
 
                         CamerasView.Refresh();
                         StatusMessage = $"테스트 데이터 생성 완료 - {totalItems}대";
+                        ShowSnackbar("생성 완료", $"테스트 데이터 생성 완료 - {totalItems}대", ControlAppearance.Success);
                     });
                 });
             }
             catch (Exception ex)
             {
                 StatusMessage = $"테스트 데이터 생성 오류: {ex.Message}";
+                ShowSnackbar("생성 오류", $"테스트 데이터 생성 오류: {ex.Message}", ControlAppearance.Danger);
                 Debug.WriteLine($"[CameraDiscovery] 테스트 데이터 생성 오류: {ex}");
             }
             finally

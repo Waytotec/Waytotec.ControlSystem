@@ -15,7 +15,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Windows
             new NavigationViewItemSeparator(),
             new NavigationViewItem()
             {
-                Content = "홈",
+                Content = "Home",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
                 TargetPageType = typeof(Views.Pages.DashboardPage)
             },
@@ -54,7 +54,7 @@ namespace Waytotec.ControlSystem.App.ViewModels.Windows
             {
                 Content = "프로그램 정보",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Info24 },
-                TargetPageType = typeof(Views.Pages.SettingsPage),
+                TargetPageType = typeof(Views.Pages.AboutPage),
                 Margin = new System.Windows.Thickness(0, 0, 0, 20)
             },
         };

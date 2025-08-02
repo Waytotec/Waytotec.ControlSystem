@@ -48,8 +48,21 @@ namespace Waytotec.ControlSystem.App.Views
                 : Wpf.Ui.Appearance.ApplicationTheme.Dark;
 
             Wpf.Ui.Appearance.ApplicationThemeManager.Apply(theme);
+            ApplyBackdropType(_settingsService.Settings.WindowBackdropType);
         }
+        public void ApplyBackdropType(string backdropType)
+        {
+            var backdrop = backdropType switch
+            {
+                "Mica" => WindowBackdropType.Mica,
+                "Acrylic" => WindowBackdropType.Acrylic,
+                "Tabbed" => WindowBackdropType.Tabbed,
+                _ => WindowBackdropType.None
+            };
 
+            // FluentWindow의 WindowBackdropType 프로퍼티 직접 설정
+            this.WindowBackdropType = backdrop;
+        }
         #region INavigationWindow methods
 
         public INavigationView GetNavigation() => RootNavigation;
@@ -120,12 +133,12 @@ namespace Waytotec.ControlSystem.App.Views
                 return;
             }
 
+            // Header 폰트 정의가 불가능 해서 Custom으로 대체
             RootNavigation.SetCurrentValue(
                 NavigationView.HeaderVisibilityProperty,
-                navigationView.SelectedItem?.TargetPageType == typeof(SettingsPage) ||
-                navigationView.SelectedItem?.TargetPageType == typeof(DashboardPage)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed
+                navigationView.SelectedItem?.TargetPageType == typeof(CameraDiscoveryPage)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible
             );
         }
     }

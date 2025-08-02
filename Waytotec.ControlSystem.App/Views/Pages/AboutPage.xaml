@@ -1,0 +1,201 @@
+﻿<Page
+    x:Class="Waytotec.ControlSystem.App.Views.Pages.AboutPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Waytotec.ControlSystem.App.Views.Controls"
+    xmlns:converters="clr-namespace:Waytotec.ControlSystem.App.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Waytotec.ControlSystem.App.Views.Pages"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="AboutPage"
+    d:DataContext="{d:DesignInstance local:AboutPage,
+                                     IsDesignTimeCreatable=False}"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <converters:BoolToStringConverter x:Key="BoolToStringConverter" />
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="200" />
+            <RowDefinition Height="30" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="2*" />
+        </Grid.ColumnDefinitions>
+
+        <!--  눈내리는 효과  -->
+        <Grid
+            Grid.Row="0"
+            Grid.ColumnSpan="2"            
+            ClipToBounds="True">
+            <Grid>
+                <Rectangle
+                    Height="200"
+                    VerticalAlignment="Bottom"                    
+                    Panel.ZIndex="0"
+                    RadiusX="8"
+                    RadiusY="8">
+                    <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Offset="0" Color="{DynamicResource SnowflakeGradientTop}" />
+                            <GradientStop Offset="1" Color="{DynamicResource SnowflakeGradientBottom}" />
+                        </LinearGradientBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+
+                <Grid Margin="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" 
+                                Panel.ZIndex="1"
+                                Margin="10,10,0,0">
+                        <ui:SymbolIcon
+                            x:Name="MainSymbolIcon"
+                            FontSize="100"
+                            Symbol="Building32" />
+                        <TextBlock
+                            x:Name="MainTitle"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="28"
+                            FontWeight="Black"
+                            Text="Waytotec" />
+                    </StackPanel>
+
+                    <TextBlock
+                        Grid.Column="1"
+                        Margin="20"
+                        HorizontalAlignment="Center"
+                        Panel.ZIndex="-1"
+                        FontSize="14"
+                        Foreground="{DynamicResource TextControlPlaceholderForeground}"
+                        LineHeight="24"
+                        TextWrapping="Wrap">
+                        주식회사 웨이투텍은 유무선 통신기반 임베디드 시스템을 완제품 및 모듈 형태로 공급하며,<LineBreak />
+                        또한 OEM 서비스로 제공하는 기술혁신 기업입니다.<LineBreak />
+                        당사는 특히 IP Camera, Smart Camera, IOT 단말, VoIP 단말 분야에서<LineBreak />
+                        경쟁력 있는 솔루션을 갖추고 있습니다. 고객사의 시스템 경쟁력을 갖추기<LineBreak />
+                        위해서 요구되면 당사는 기존의 제품을 커스터마이징하여 특정 고객사만을<LineBreak />
+                        위한 임베디드 시스템을 공급하는 B2B 비즈니스 모델도 갖고 있습니다.<LineBreak />
+                        <LineBreak />
+                        <!--웨이투텍의 핵심 역량은 검증된 임베디드 시스템 솔루션을 공급하는 것으로서<LineBreak />
+                        4차 산업혁명시대의 초석이 될 것을 다짐합니다.<LineBreak-->
+                        />
+                    </TextBlock>
+                </Grid>
+
+                <Canvas x:Name="MainCanvas" Panel.ZIndex="2" />
+            </Grid>
+        </Grid>
+        <Separator
+            Grid.Row="1"
+            Grid.Column ="0"
+            Grid.ColumnSpan="2"
+            Margin="0, 20, 0, 0"
+            Style="{StaticResource GradientSeparatorStyle}" />
+        <ui:CardExpander
+            Grid.Row="2"
+            Grid.RowSpan="2"
+            Grid.ColumnSpan="2"
+            Margin="0,10,0,0"
+            VerticalAlignment="Top"
+            ContentPadding="0"
+            Icon="{ui:ImageIcon 'pack://application:,,,/Assets/wpfui-icon-256.png',
+                                Width=38,
+                                Height=35}">
+            <ui:CardExpander.Header>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBlock
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        FontTypography="Body"
+                        Text="Waytotec" />
+                    <ui:TextBlock
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="© 2025 WPF UI Contributors" />
+                    <TextBlock
+                        Grid.Row="0"
+                        Grid.RowSpan="2"
+                        Grid.Column="1"
+                        Margin="0,0,16,0"
+                        VerticalAlignment="Center"
+                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{Binding ViewModel.AppVersion, Mode=OneWay}" />
+                </Grid>
+            </ui:CardExpander.Header>
+            <StackPanel>
+                <!--<Grid Margin="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="====>" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                        Text="https://www.waytotec.com/" />
+                </Grid>-->
+                <ui:Anchor
+                    Margin="0"
+                    Padding="16"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Background="Transparent"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0"
+                    NavigateUri="https://www.waytotec.com/">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Homepage (https://www.waytotec.com/)" />
+                        <ui:SymbolIcon Grid.Column="1" Symbol="Link24" />
+                    </Grid>
+                </ui:Anchor>
+                <ui:Anchor
+                    Margin="0"
+                    Padding="16"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Background="Transparent"
+                    BorderThickness="0,1,0,1"
+                    CornerRadius="0"
+                    NavigateUri="git clone https://github.com/lepoco/wpfui.git">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="WPF Ui Github (https://github.com/lepoco/)" />
+                        <ui:SymbolIcon Grid.Column="1" Symbol="Link24" />
+                    </Grid>
+                </ui:Anchor>
+                <TextBlock Margin="16" Text="{Binding ViewModel.AppVersion, Mode=OneWay}" />
+            </StackPanel>
+        </ui:CardExpander>
+    </Grid>
+</Page>

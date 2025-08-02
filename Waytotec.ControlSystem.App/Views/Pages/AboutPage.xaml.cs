@@ -7,12 +7,12 @@ using WpfWaytotec.ControlSystem.App.Effects;
 
 namespace Waytotec.ControlSystem.App.Views.Pages
 {
-    public partial class DashboardPage : INavigableView<DashboardViewModel>
+    public partial class AboutPage : INavigableView<AboutViewModel>
     {
-        public DashboardViewModel ViewModel { get; }
+        public AboutViewModel ViewModel { get; }
         private SnowflakeEffect? _snowflake;
 
-        public DashboardPage(DashboardViewModel viewModel)
+        public AboutPage(AboutViewModel viewModel)
         {
             ViewModel = viewModel;
             DataContext = ViewModel;

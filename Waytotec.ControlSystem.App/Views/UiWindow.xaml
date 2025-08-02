@@ -18,7 +18,6 @@
     ExtendsContentIntoTitleBar="True"
     Foreground="{DynamicResource TextFillColorPrimaryBrush}"
     SizeChanged="FluentWindow_SizeChanged"
-    WindowBackdropType="Mica"
     WindowCornerPreference="Default"
     WindowStartupLocation="CenterScreen"
     WindowState="Normal"

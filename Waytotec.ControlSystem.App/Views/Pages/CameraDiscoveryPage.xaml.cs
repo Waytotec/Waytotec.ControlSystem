@@ -20,17 +20,11 @@ namespace Waytotec.ControlSystem.App.Views.Pages
     /// </summary>
     public partial class CameraDiscoveryPage : INavigableView<CameraDiscoveryViewModel>
     {
-        public CameraDiscoveryViewModel ViewModel { get; }
-        private ISnackbarService _snackbar;
-        private readonly IContentDialogService _dialogService;
+        public CameraDiscoveryViewModel ViewModel { get; }        
 
-        public CameraDiscoveryPage(CameraDiscoveryViewModel viewModel,
-                                   ISnackbarService snackbar,
-                                   IContentDialogService dialogService)
+        public CameraDiscoveryPage(CameraDiscoveryViewModel viewModel)
         {
             ViewModel = viewModel;
-            _snackbar = snackbar;
-            _dialogService = dialogService;
             DataContext = ViewModel;
 
             InitializeComponent();
@@ -171,10 +165,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
                     ViewModel.CopySelectedToClipboardCommand.Execute(null);
                     e.Handled = true;
                 }
-                _snackbar.Show($"{selectedCount} 건의 카메라 정보가 클립보드에 복사되었습니다.", "내용 복사", 
-                    ControlAppearance.Success,
-                    new SymbolIcon(SymbolRegular.Info28),
-                    TimeSpan.FromSeconds(3));
+                ViewModel.ShowSnackbar("내용 복사", $"{selectedCount} 건의 카메라 정보가 클립보드에 복사되었습니다.", ControlAppearance.Success);
             }
             else if (ViewModel.SelectedCamera != null)
             {
@@ -363,33 +354,19 @@ namespace Waytotec.ControlSystem.App.Views.Pages
                     case System.Windows.Input.Key.Delete:
                         if (ViewModel.SelectedCameras.Count > 0)
                         {
-                            ContentDialogResult result2 = await _dialogService.ShowSimpleDialogAsync(
-                                new SimpleContentDialogCreateOptions()
-                                {
-                                    Title = $"선택된 {ViewModel.SelectedCameras.Count}대 카메라를 목록에서 제거하시겠습니까?",
-                                    Content = "카메라 제거 확인",
-                                    PrimaryButtonText = "예",
-                                    CloseButtonText = "아니오",
-                                });
+                            //ContentDialogResult result2 = await ViewModel.ShowDialogAsync(
+                            //    $"선택된 {ViewModel.SelectedCameras.Count}대 카메라를 목록에서 제거하시겠습니까?",
+                            //    "카메라 제거 확인");
 
-                            if (result2 == ContentDialogResult.Primary)
-                            {
-                                RemoveSelectedCameras();
-                                e.Handled = true;
-                            }
+                            //if (result2 == ContentDialogResult.Primary)
+                            //{
+                            //    RemoveSelectedCameras();
+                            //    e.Handled = true;
+                            //}
 
-                            var uiMessageBox = new Wpf.Ui.Controls.MessageBox
-                            {
-                                IsPrimaryButtonEnabled = true,
-                                Owner = Application.Current.MainWindow,
-                                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                                PrimaryButtonText = "예",
-                                CloseButtonText = "아니오",
-                                Title = "선택 카메라 제거",
-                                Content = $"선택된 {ViewModel.SelectedCameras.Count}대 카메라를 목록에서 제거하시겠습니까?",
-                            };
-                            
-                            var result = await uiMessageBox.ShowDialogAsync();
+                            var result = await ViewModel.ShowQuestionAsync(
+                                $"선택된 {ViewModel.SelectedCameras.Count}대 카메라를 목록에서 제거하시겠습니까?",
+                                "선택 카메라 제거");
 
                             if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
                             {
