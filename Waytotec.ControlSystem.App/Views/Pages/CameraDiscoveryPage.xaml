@@ -179,7 +179,7 @@
                             Style="{StaticResource ModernGroupBoxStyle}">
                             <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                                 <ui:TextBox
-                                    Width="250"
+                                    Width="200"
                                     Margin="0,0,5,0"
                                     PlaceholderText="IP, MAC, 시리얼번호 검색..."
                                     Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
@@ -203,7 +203,7 @@
                                     VerticalAlignment="Center"
                                     Text="IP 대역:" />
                                 <ui:TextBox
-                                    Width="130"
+                                    Width="140"
                                     Margin="0,0,5,0"
                                     VerticalAlignment="Center"
                                     Text="{Binding NetworkRange}" />
@@ -321,9 +321,6 @@
                                         <Setter Property="Background" Value="Transparent" />
                                         <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
                                     </Trigger>
-                                    <!--<Trigger Property="IsFocused" Value="True">
-        <Setter Property="BorderThickness" Value="0" />
-    </Trigger>-->
                                 </Style.Triggers>
                             </Style>
                         </ui:DataGrid.Resources>
@@ -637,7 +634,11 @@
                         Icon="{ui:SymbolIcon Symbol=ArrowReset24}" />
                 </WrapPanel>
             </StackPanel>
-
+            <GridSplitter
+                Grid.Column="1"
+                Width="10"
+                HorizontalAlignment="Stretch"
+                Background="Transparent" />
             <!--  영상 영역  -->
             <GroupBox
                 Grid.Row="0"
@@ -645,10 +646,15 @@
                 Grid.Column="2"
                 Header="실시간 영상"
                 Style="{StaticResource ModernGroupBoxStyle}">
-                <controls:RtspVideoViewer
-                    x:Name="RtspViewer"
-                    Background="Black"
-                    MouseDoubleClick="RtspViewer_MouseDoubleClick" />
+                <Border
+                    BorderBrush="AntiqueWhite"
+                    BorderThickness="2"
+                    CornerRadius="10">
+                    <controls:RtspVideoViewer
+                        x:Name="RtspViewer"
+                        Background="Transparent"
+                        MouseDoubleClick="RtspViewer_MouseDoubleClick" />
+                </Border>
             </GroupBox>
         </Grid>
 

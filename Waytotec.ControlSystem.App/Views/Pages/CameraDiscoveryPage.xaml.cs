@@ -165,7 +165,6 @@ namespace Waytotec.ControlSystem.App.Views.Pages
                     ViewModel.CopySelectedToClipboardCommand.Execute(null);
                     e.Handled = true;
                 }
-                ViewModel.ShowSnackbar("내용 복사", $"{selectedCount} 건의 카메라 정보가 클립보드에 복사되었습니다.", ControlAppearance.Success);
             }
             else if (ViewModel.SelectedCamera != null)
             {
