@@ -1,16 +1,11 @@
 ﻿using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Waytotec.ControlSystem.App.ViewModels.Pages;
 using Waytotec.ControlSystem.Core.Models;
-using Wpf.Ui;
 using Wpf.Ui.Abstractions.Controls;
-using Wpf.Ui.Controls;
-using Wpf.Ui.Extensions;
-using WpfWaytotec.ControlSystem.App.Effects;
 using DataGrid = Wpf.Ui.Controls.DataGrid;
 
 namespace Waytotec.ControlSystem.App.Views.Pages
@@ -20,7 +15,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
     /// </summary>
     public partial class CameraDiscoveryPage : INavigableView<CameraDiscoveryViewModel>
     {
-        public CameraDiscoveryViewModel ViewModel { get; }        
+        public CameraDiscoveryViewModel ViewModel { get; }
 
         public CameraDiscoveryPage(CameraDiscoveryViewModel viewModel)
         {
@@ -38,7 +33,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
 
         private void HandleUnloaded(object sender, RoutedEventArgs e)
         {
-            RtspViewer.Stop();            
+            RtspViewer.Stop();
             Unloaded -= HandleUnloaded;
         }
         // <summary>
@@ -284,7 +279,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         {
             if (ViewModel.SelectedCamera != null)
             {
-                RtspViewer.Load(ip: ViewModel.SelectedCamera.IpAddressString, stream: "stream0");
+                RtspViewer.Load(ip: ViewModel.SelectedCamera.IpAddressString, stream: "live1.sdp");
             }
         }
 
@@ -436,7 +431,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         {
             // 현재 선택된 카메라의 IP 가져오기
             string ip = "192.168.1.120"; // 기본값
-            string stream = "stream0";
+            string stream = "live1.sdp";
 
             if (ViewModel.SelectedCamera != null)
             {
