@@ -64,7 +64,6 @@ Visual Studio에서 `Waytotec.ControlSystem.sln` 열기
 
 ## 📝 요구 사항 정리
 
-|![1 CamFree](https://github.com/user-attachments/assets/b5bce43e-6e01-4759-86f6-9be38dff2834)|![LprUtil](https://github.com/user-attachments/assets/fe6ef6d2-c0a9-4735-8f7a-8c893c0d5d25)|
 |---|---|
 
 ### 1. 분석 및 설계
