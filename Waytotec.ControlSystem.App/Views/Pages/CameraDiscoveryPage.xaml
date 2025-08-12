@@ -314,12 +314,10 @@
 
                             <!--  셀 스타일 개선  -->
                             <Style TargetType="DataGridCell">
-                                <!--<Setter Property="Padding" Value="4,4" />-->
-                                <!--<Setter Property="VerticalAlignment" Value="Center" />-->
                                 <Style.Triggers>
                                     <Trigger Property="IsSelected" Value="True">
                                         <Setter Property="Background" Value="Transparent" />
-                                        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                        <Setter Property="BorderBrush" Value="Transparent" />
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
@@ -361,6 +359,17 @@
                                 CanUserSort="False"
                                 Header="ID"
                                 IsReadOnly="True">
+                                <DataGridTextColumn.CellStyle>
+                                    <Style TargetType="DataGridCell">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.CellStyle>
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Center" />
@@ -491,17 +500,21 @@
                             <Style TargetType="DataGridRow">
                                 <Setter Property="Background" Value="Transparent" />
                                 <Style.Triggers>
+                                    <!--  선택된 행의 배경을 투명하게  -->
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="Transparent" />
+                                    </Trigger>
                                     <Trigger Property="IsMouseOver" Value="True">
                                         <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
                                     </Trigger>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
-                                    </Trigger>
+                                    <!--  Offline/Error 선택 비활성화  -->
                                     <DataTrigger Binding="{Binding Status}" Value="Offline">
+                                        <Setter Property="IsEnabled" Value="False" />
                                         <Setter Property="Opacity" Value="0.6" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Status}" Value="Error">
-                                        <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                        <Setter Property="IsEnabled" Value="False" />
+                                        <Setter Property="Opacity" Value="0.6" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
