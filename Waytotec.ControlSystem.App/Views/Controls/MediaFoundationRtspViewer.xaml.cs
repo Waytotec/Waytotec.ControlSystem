@@ -1,32 +1,35 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Controls;
-using System.Windows.Media.Imaging;
+using System.Windows.Interop;
 using System.Windows.Threading;
 
 namespace Waytotec.ControlSystem.App.Views.Controls
 {
-    /// <summary>
-    /// MediaFoundationRtspViewer.xaml에 대한 상호 작용 논리
-    /// </summary>    
     public partial class MediaFoundationRtspViewer : UserControl
     {
         private IntPtr _mediaSession = IntPtr.Zero;
+        private IntPtr _mediaSource = IntPtr.Zero;
         private IntPtr _topology = IntPtr.Zero;
+        private IntPtr _videoDisplayControl = IntPtr.Zero;
         private bool _isStreaming = false;
         private int _frameCount = 0;
         private Stopwatch _watch = new();
         private readonly object _lock = new();
-        private CancellationTokenSource? _streamCts;
         private readonly DispatcherTimer _fpsTimer;
         private string _currentUrl = string.Empty;
+        private IntPtr _hwndVideo = IntPtr.Zero;
 
         public MediaFoundationRtspViewer()
         {
             InitializeComponent();
 
             // Media Foundation 초기화
-            MFStartup();
+            var hr = MFStartup(MF_VERSION, MFSTARTUP_LITE);
+            if (hr != 0)
+            {
+                Debug.WriteLine($"Media Foundation 초기화 실패: 0x{hr:X}");
+            }
 
             _fpsTimer = new DispatcherTimer
             {
@@ -34,13 +37,40 @@ namespace Waytotec.ControlSystem.App.Views.Controls
             };
             _fpsTimer.Tick += UpdateFpsDisplay;
 
-            // UserControl 이벤트 구독
+            this.Loaded += OnLoaded;
             this.Unloaded += OnUnloaded;
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            // 비디오 표시를 위한 윈도우 핸들 준비
+            var source = PresentationSource.FromVisual(this);
+            if (source != null)
+            {
+                _hwndVideo = ((HwndSource)source).Handle;
+            }
+        }
+
+        private async void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            await StopAsync();
+            MFShutdown();
         }
 
         public async void Load(string ip, string stream)
         {
-            string rtspUrl = $"rtsp://admin:admin@{ip}:554/{stream}";
+            string rtspUrl;
+
+            if (ip.StartsWith("rtsp://"))
+            {
+                rtspUrl = ip; // 전체 URL이 전달된 경우
+            }
+            else
+            {
+                rtspUrl = $"rtsp://admin:admin@{ip}:554/{stream}";
+            }
+
+            rtspUrl = "rtsp://210.99.70.120:1935/live/cctv001.stream";
 
             if (_isStreaming && rtspUrl == _currentUrl)
                 return;
@@ -61,45 +91,53 @@ namespace Waytotec.ControlSystem.App.Views.Controls
                 LoadingText.Text = "연결 중...";
             });
 
-            _streamCts = new CancellationTokenSource();
-            var token = _streamCts.Token;
-
             try
             {
-                await Task.Run(() => StartMediaFoundationStream(rtspUrl, token), token);
-            }
-            catch (OperationCanceledException)
-            {
-                // 정상적인 취소
+                await Task.Run(() => StartMediaFoundationStream(rtspUrl));
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"스트림 오류: {ex.Message}");
                 Dispatcher.Invoke(() =>
                 {
-                    LoadingText.Text = "연결 실패";
+                    LoadingText.Text = $"연결 실패: {ex.Message}";
                 });
             }
         }
 
-        private void StartMediaFoundationStream(string rtspUrl, CancellationToken token)
+        private void StartMediaFoundationStream(string rtspUrl)
         {
             try
             {
-                // Media Session 생성
-                MFCreateMediaSession(IntPtr.Zero, out _mediaSession);
+                int hr;
 
-                // Source Resolver로 RTSP URL 해석
-                MFCreateSourceResolver(out IntPtr sourceResolver);
+                // 1. Media Session 생성
+                hr = MFCreateMediaSession(IntPtr.Zero, out _mediaSession);
+                if (hr != 0) throw new COMException($"Media Session 생성 실패: 0x{hr:X}", hr);
 
-                var hr = MFCreateSourceReaderFromURL(rtspUrl, IntPtr.Zero, out IntPtr sourceReader);
-                if (hr != 0)
-                {
-                    throw new COMException($"RTSP 연결 실패: {rtspUrl}", hr);
-                }
+                // 2. Source Resolver로 미디어 소스 생성
+                hr = MFCreateSourceResolver(out IntPtr sourceResolver);
+                if (hr != 0) throw new COMException($"Source Resolver 생성 실패: 0x{hr:X}", hr);
 
-                // 비디오 스트림 설정
-                ConfigureVideoStream(sourceReader);
+                // 3. RTSP URL에서 미디어 소스 생성
+                hr = CreateObjectFromURL(sourceResolver, rtspUrl, MF_RESOLUTION_MEDIASOURCE,
+                    IntPtr.Zero, out MF_OBJECT_TYPE objectType, out _mediaSource);
+
+                Marshal.Release(sourceResolver);
+
+                if (hr != 0) throw new COMException($"RTSP 소스 생성 실패: 0x{hr:X}", hr);
+
+                // 4. 토폴로지 생성
+                CreateTopology();
+
+                // 5. Media Session에 토폴로지 설정
+                hr = SetTopology(_mediaSession, 0, _topology);
+                if (hr != 0) throw new COMException($"토폴로지 설정 실패: 0x{hr:X}", hr);
+
+                // 6. 재생 시작
+                var propVar = new PROPVARIANT();
+                hr = Start(_mediaSession, ref GUID_NULL, ref propVar);
+                if (hr != 0) throw new COMException($"재생 시작 실패: 0x{hr:X}", hr);
 
                 lock (_lock)
                 {
@@ -112,133 +150,151 @@ namespace Waytotec.ControlSystem.App.Views.Controls
                     _fpsTimer.Start();
                 });
 
-                // 프레임 읽기 루프
-                ReadFrameLoop(sourceReader, token);
+                // 이벤트 처리 루프
+                MonitorSessionEvents();
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Media Foundation 스트림 시작 실패: {ex.Message}");
                 Dispatcher.Invoke(() =>
                 {
-                    LoadingText.Text = $"연결 실패: {ex.Message}";
+                    LoadingText.Text = "연결 실패";
                 });
+                CleanupMediaFoundation();
             }
         }
 
-        private void ConfigureVideoStream(IntPtr sourceReader)
+        private void CreateTopology()
         {
-            // 미디어 타입 설정 (RGB32로 변환)
-            MFCreateMediaType(out IntPtr mediaType);
-
-            // 비디오 포맷 설정
-            MFSetAttributeGUID(mediaType, MF_MT_MAJOR_TYPE, MFMediaType_Video);
-            MFSetAttributeGUID(mediaType, MF_MT_SUBTYPE, MFVideoFormat_RGB32);
-
-            // Source Reader에 미디어 타입 설정
-            MFSourceReaderSetCurrentMediaType(sourceReader, 0, IntPtr.Zero, mediaType);
-
-            // 비디오 정보 가져오기
-            MFSourceReaderGetCurrentMediaType(sourceReader, 0, out IntPtr currentType);
-
-            MFGetAttributeSize(currentType, MF_MT_FRAME_SIZE, out uint width, out uint height);
-            Debug.WriteLine($"비디오 해상도: {width}x{height}");
-
-            Marshal.Release(mediaType);
-            Marshal.Release(currentType);
-        }
-
-        private void ReadFrameLoop(IntPtr sourceReader, CancellationToken token)
-        {
-            while (_isStreaming && !token.IsCancellationRequested)
+            try
             {
+                int hr;
+
+                // 토폴로지 생성
+                hr = MFCreateTopology(out _topology);
+                if (hr != 0) throw new COMException($"토폴로지 생성 실패: 0x{hr:X}", hr);
+
+                // 프레젠테이션 디스크립터 가져오기
+                hr = CreatePresentationDescriptor(_mediaSource, out IntPtr pd);
+                if (hr != 0) throw new COMException($"Presentation Descriptor 생성 실패: 0x{hr:X}", hr);
+
                 try
                 {
-                    var hr = MFSourceReaderReadSample(sourceReader, 0, 0, out int streamIndex,
-                        out int flags, out long timestamp, out IntPtr sample);
+                    // 스트림 개수 가져오기
+                    hr = GetStreamDescriptorCount(pd, out uint streamCount);
+                    if (hr != 0) return;
 
-                    if (hr != 0 || sample == IntPtr.Zero)
+                    // 각 스트림에 대해 토폴로지 노드 생성
+                    for (uint i = 0; i < streamCount; i++)
                     {
-                        Thread.Sleep(33); // ~30fps
-                        continue;
-                    }
+                        hr = GetStreamDescriptorByIndex(pd, i, out bool selected, out IntPtr sd);
+                        if (hr != 0 || !selected) continue;
 
-                    ProcessVideoSample(sample);
-                    Marshal.Release(sample);
-
-                    _frameCount++;
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"프레임 읽기 오류: {ex.Message}");
-                    break;
-                }
-            }
-
-            if (sourceReader != IntPtr.Zero)
-                Marshal.Release(sourceReader);
-        }
-
-        private void ProcessVideoSample(IntPtr sample)
-        {
-            try
-            {
-                // Media Buffer 가져오기
-                MFSampleGetBufferByIndex(sample, 0, out IntPtr buffer);
-
-                // 버퍼 데이터 접근
-                MFMediaBufferLock(buffer, out IntPtr data, out int maxLength, out int currentLength);
-
-                if (data != IntPtr.Zero && currentLength > 0)
-                {
-                    // RGB 데이터를 Bitmap으로 변환
-                    var bitmap = CreateBitmapFromRgbData(data, currentLength);
-                    if (bitmap != null)
-                    {
-                        Dispatcher.BeginInvoke(() =>
+                        try
                         {
-                            if (_isStreaming)
-                                VideoImage.Source = bitmap;
-                        });
+                            // 소스 노드 생성
+                            hr = MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, out IntPtr sourceNode);
+                            if (hr != 0) continue;
+
+                            try
+                            {
+                                // 소스 노드 속성 설정
+                                SetUnknown(sourceNode, ref MF_TOPONODE_SOURCE, _mediaSource);
+                                SetUnknown(sourceNode, ref MF_TOPONODE_PRESENTATION_DESCRIPTOR, pd);
+                                SetUnknown(sourceNode, ref MF_TOPONODE_STREAM_DESCRIPTOR, sd);
+
+                                // 출력 노드 생성 (렌더러)
+                                hr = MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, out IntPtr outputNode);
+                                if (hr != 0) continue;
+
+                                try
+                                {
+                                    // 비디오 렌더러 생성
+                                    CreateVideoRenderer(outputNode);
+
+                                    // 토폴로지에 노드 추가
+                                    AddNode(_topology, sourceNode);
+                                    AddNode(_topology, outputNode);
+
+                                    // 노드 연결
+                                    ConnectOutput(sourceNode, 0, outputNode, 0);
+                                }
+                                finally
+                                {
+                                    Marshal.Release(outputNode);
+                                }
+                            }
+                            finally
+                            {
+                                Marshal.Release(sourceNode);
+                            }
+                        }
+                        finally
+                        {
+                            Marshal.Release(sd);
+                        }
                     }
                 }
-
-                MFMediaBufferUnlock(buffer);
-                Marshal.Release(buffer);
+                finally
+                {
+                    Marshal.Release(pd);
+                }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"비디오 샘플 처리 오류: {ex.Message}");
+                Debug.WriteLine($"토폴로지 생성 오류: {ex.Message}");
             }
         }
 
-        private BitmapSource? CreateBitmapFromRgbData(IntPtr data, int length)
+        private void CreateVideoRenderer(IntPtr outputNode)
         {
             try
             {
-                // 예상 해상도 (실제로는 미디어 타입에서 가져와야 함)
-                int width = 640;
-                int height = 480;
-                int stride = width * 4; // RGB32 = 4 bytes per pixel
-
-                if (length < stride * height)
-                    return null;
-
-                var bitmap = BitmapSource.Create(
-                    width, height,
-                    96, 96, // DPI
-                    System.Windows.Media.PixelFormats.Bgr32,
-                    null,
-                    data,
-                    length,
-                    stride);
-
-                bitmap.Freeze();
-                return bitmap;
+                // Enhanced Video Renderer (EVR) 생성
+                var hr = MFCreateVideoRendererActivate(_hwndVideo, out IntPtr activate);
+                if (hr == 0)
+                {
+                    SetObject(outputNode, ref MF_TOPONODE_STREAMDESCRIPTOR, activate);
+                    Marshal.Release(activate);
+                }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Bitmap 생성 오류: {ex.Message}");
-                return null;
+                Debug.WriteLine($"비디오 렌더러 생성 오류: {ex.Message}");
+            }
+        }
+
+        private void MonitorSessionEvents()
+        {
+            try
+            {
+                while (_isStreaming && _mediaSession != IntPtr.Zero)
+                {
+                    var hr = GetEvent(_mediaSession, MF_EVENT_FLAG_NO_WAIT, out IntPtr mediaEvent);
+
+                    if (hr == 0 && mediaEvent != IntPtr.Zero)
+                    {
+                        _frameCount++;
+
+                        // 이벤트 타입 확인
+                        GetType(mediaEvent, out MediaEventType eventType);
+
+                        if (eventType == MediaEventType.MESessionEnded ||
+                            eventType == MediaEventType.MEError)
+                        {
+                            Debug.WriteLine($"세션 이벤트: {eventType}");
+                            break;
+                        }
+
+                        Marshal.Release(mediaEvent);
+                    }
+
+                    Thread.Sleep(33); // ~30fps
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"이벤트 모니터링 오류: {ex.Message}");
             }
         }
 
@@ -250,7 +306,7 @@ namespace Waytotec.ControlSystem.App.Views.Controls
             var fps = _frameCount / Math.Max(elapsed, 1);
 
             OverlayFps.Text = $"FPS: {fps:F1}";
-            OverlayResolution.Text = "해상도: 640x480";
+            OverlayResolution.Text = "해상도: Auto";
             OverlayTime.Text = $"경과시간: {elapsed:F1}초";
         }
 
@@ -261,44 +317,97 @@ namespace Waytotec.ControlSystem.App.Views.Controls
                 _isStreaming = false;
             }
 
-            _streamCts?.Cancel();
-
-            await Task.Delay(100); // 정리 시간 확보
-
-            if (_mediaSession != IntPtr.Zero)
-            {
-                MFMediaSessionClose(_mediaSession);
-                Marshal.Release(_mediaSession);
-                _mediaSession = IntPtr.Zero;
-            }
-
-            if (_topology != IntPtr.Zero)
-            {
-                Marshal.Release(_topology);
-                _topology = IntPtr.Zero;
-            }
-
-            _streamCts?.Dispose();
-            _streamCts = null;
+            await Task.Delay(100);
+            CleanupMediaFoundation();
 
             Dispatcher.Invoke(() =>
             {
-                VideoImage.Source = null;
                 LoadingOverlay.Visibility = Visibility.Collapsed;
                 _fpsTimer.Stop();
             });
         }
 
-        private async void OnUnloaded(object sender, RoutedEventArgs e)
+        private void CleanupMediaFoundation()
         {
-            await StopAsync();
-            MFShutdown();
+            try
+            {
+                if (_mediaSession != IntPtr.Zero)
+                {
+                    Stop(_mediaSession);
+                    Close(_mediaSession);
+                    Marshal.Release(_mediaSession);
+                    _mediaSession = IntPtr.Zero;
+                }
+
+                if (_topology != IntPtr.Zero)
+                {
+                    Marshal.Release(_topology);
+                    _topology = IntPtr.Zero;
+                }
+
+                if (_mediaSource != IntPtr.Zero)
+                {
+                    Shutdown(_mediaSource);
+                    Marshal.Release(_mediaSource);
+                    _mediaSource = IntPtr.Zero;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Media Foundation 정리 오류: {ex.Message}");
+            }
         }
 
-        #region Media Foundation P/Invoke 선언
+        // 테스트용 메서드
+        public void LoadTestStream()
+        {
+            Load("rtsp://210.99.70.120:1935/live/cctv001.stream", "");
+        }
 
+        #region Media Foundation COM Interop
+
+        // 상수들
+        private const uint MF_VERSION = 0x20070;
+        private const uint MFSTARTUP_LITE = 1;
+        private const uint MF_RESOLUTION_MEDIASOURCE = 0x00000001;
+        private const uint MF_EVENT_FLAG_NO_WAIT = 0x00000001;
+        private const uint MF_TOPOLOGY_SOURCESTREAM_NODE = 0;
+        private const uint MF_TOPOLOGY_OUTPUT_NODE = 2;
+
+        // GUID들
+        private static Guid GUID_NULL = Guid.Empty;
+        private static Guid MF_TOPONODE_SOURCE = new("835c58ed-e075-4bc7-bcba-4de000df9ae6");
+        private static Guid MF_TOPONODE_PRESENTATION_DESCRIPTOR = new("835c58ee-e075-4bc7-bcba-4de000df9ae6");
+        private static Guid MF_TOPONODE_STREAM_DESCRIPTOR = new("835c58ef-e075-4bc7-bcba-4de000df9ae6");
+        private static Guid MF_TOPONODE_STREAMDESCRIPTOR = new("835c58ef-e075-4bc7-bcba-4de000df9ae6");
+
+        private enum MF_OBJECT_TYPE
+        {
+            MF_OBJECT_MEDIASOURCE = 0,
+            MF_OBJECT_BYTESTREAM = 1,
+            MF_OBJECT_INVALID = 2
+        }
+
+        private enum MediaEventType
+        {
+            MEUnknown = 0,
+            MEError = 1,
+            MESessionEnded = 110
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PROPVARIANT
+        {
+            public ushort vt;
+            public ushort wReserved1;
+            public ushort wReserved2;
+            public ushort wReserved3;
+            public IntPtr data;
+        }
+
+        // Media Foundation API들
         [DllImport("mfplat.dll")]
-        private static extern int MFStartup(uint version = 0x20070, uint flags = 0);
+        private static extern int MFStartup(uint version, uint flags);
 
         [DllImport("mfplat.dll")]
         private static extern int MFShutdown();
@@ -306,58 +415,104 @@ namespace Waytotec.ControlSystem.App.Views.Controls
         [DllImport("mf.dll")]
         private static extern int MFCreateMediaSession(IntPtr config, out IntPtr session);
 
-        [DllImport("mf.dll")]
-        private static extern int MFMediaSessionClose(IntPtr session);
-
-        [DllImport("mfreadwrite.dll")]
-        private static extern int MFCreateSourceReaderFromURL(
-            [MarshalAs(UnmanagedType.LPWStr)] string url,
-            IntPtr attributes,
-            out IntPtr sourceReader);
-
         [DllImport("mfplat.dll")]
         private static extern int MFCreateSourceResolver(out IntPtr resolver);
 
         [DllImport("mfplat.dll")]
-        private static extern int MFCreateMediaType(out IntPtr mediaType);
-
-        [DllImport("mfreadwrite.dll")]
-        private static extern int MFSourceReaderSetCurrentMediaType(
-            IntPtr reader, int streamIndex, IntPtr reserved, IntPtr mediaType);
-
-        [DllImport("mfreadwrite.dll")]
-        private static extern int MFSourceReaderGetCurrentMediaType(
-            IntPtr reader, int streamIndex, out IntPtr mediaType);
-
-        [DllImport("mfreadwrite.dll")]
-        private static extern int MFSourceReaderReadSample(
-            IntPtr reader, int streamIndex, int flags,
-            out int actualStreamIndex, out int streamFlags,
-            out long timestamp, out IntPtr sample);
+        private static extern int MFCreateTopology(out IntPtr topology);
 
         [DllImport("mfplat.dll")]
-        private static extern int MFSampleGetBufferByIndex(IntPtr sample, int index, out IntPtr buffer);
+        private static extern int MFCreateTopologyNode(uint nodeType, out IntPtr node);
 
-        [DllImport("mfplat.dll")]
-        private static extern int MFMediaBufferLock(IntPtr buffer, out IntPtr data, out int maxLength, out int currentLength);
+        [DllImport("evr.dll")]
+        private static extern int MFCreateVideoRendererActivate(IntPtr hwndVideo, out IntPtr activate);
 
-        [DllImport("mfplat.dll")]
-        private static extern int MFMediaBufferUnlock(IntPtr buffer);
+        // COM 인터페이스 메서드들 (간접 호출)
+        private static int CreateObjectFromURL(IntPtr sourceResolver, string url, uint flags,
+            IntPtr props, out MF_OBJECT_TYPE objectType, out IntPtr source)
+        {
+            // 실제 구현에서는 IMFSourceResolver::CreateObjectFromURL 호출
+            objectType = MF_OBJECT_TYPE.MF_OBJECT_INVALID;
+            source = IntPtr.Zero;
+            return unchecked((int)0x80004001); // E_NOTIMPL - 실제로는 COM 인터페이스 호출 필요
+        }
 
-        [DllImport("mfplat.dll")]
-        private static extern int MFSetAttributeGUID(IntPtr attributes, Guid key, Guid value);
+        private static int CreatePresentationDescriptor(IntPtr mediaSource, out IntPtr pd)
+        {
+            pd = IntPtr.Zero;
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
 
-        [DllImport("mfplat.dll")]
-        private static extern int MFGetAttributeSize(IntPtr attributes, Guid key, out uint width, out uint height);
+        private static int GetStreamDescriptorCount(IntPtr pd, out uint count)
+        {
+            count = 0;
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
 
-        // Media Foundation 상수들
-        private static readonly Guid MF_MT_MAJOR_TYPE = new("48eba18e-f8c9-4687-bf11-0a74c9f96a8f");
-        private static readonly Guid MF_MT_SUBTYPE = new("f7e34c9a-42e8-4714-b74b-cb29d72c35e5");
-        private static readonly Guid MF_MT_FRAME_SIZE = new("b725dc7e-8efc-4963-bc0c-dd969ec5c3f7");
-        private static readonly Guid MFMediaType_Video = new("73646976-0000-0010-8000-00aa00389b71");
-        private static readonly Guid MFVideoFormat_RGB32 = new("00000016-0000-0010-8000-00aa00389b71");
+        private static int GetStreamDescriptorByIndex(IntPtr pd, uint index, out bool selected, out IntPtr sd)
+        {
+            selected = false;
+            sd = IntPtr.Zero;
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int SetUnknown(IntPtr node, ref Guid key, IntPtr value)
+        {
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int SetObject(IntPtr node, ref Guid key, IntPtr value)
+        {
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int AddNode(IntPtr topology, IntPtr node)
+        {
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int ConnectOutput(IntPtr sourceNode, uint sourceOutput, IntPtr sinkNode, uint sinkInput)
+        {
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int SetTopology(IntPtr session, uint flags, IntPtr topology)
+        {
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int Start(IntPtr session, ref Guid format, ref PROPVARIANT startPos)
+        {
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int Stop(IntPtr session)
+        {
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int Close(IntPtr session)
+        {
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int Shutdown(IntPtr mediaSource)
+        {
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int GetEvent(IntPtr session, uint flags, out IntPtr mediaEvent)
+        {
+            mediaEvent = IntPtr.Zero;
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
+
+        private static int GetType(IntPtr mediaEvent, out MediaEventType eventType)
+        {
+            eventType = MediaEventType.MEUnknown;
+            return unchecked((int)0x80004001); // E_NOTIMPL
+        }
 
         #endregion
     }
-
 }

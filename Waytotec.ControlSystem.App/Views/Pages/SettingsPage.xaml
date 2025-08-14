@@ -77,8 +77,10 @@
         </ui:CardControl>
 
         <!--  Language Settings  -->
-        <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Symbol=LocalLanguage24}"
-                        IsEnabled="False">
+        <ui:CardControl
+            Margin="0,0,0,12"
+            Icon="{ui:SymbolIcon Symbol=LocalLanguage24}"
+            IsEnabled="False">
             <ui:CardControl.Header>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -95,10 +97,14 @@
                         Text="표시할 언어를 선택하세요" />
                 </Grid>
             </ui:CardControl.Header>
-            <ComboBox
+            <!--<ComboBox
                 x:Name="LanguageComboBox"
                 MinWidth="200"
                 SelectedIndex="{Binding ViewModel.LanguageSelectedIndex, Mode=TwoWay}">
+                <ComboBoxItem Content="한국어" />
+                <ComboBoxItem Content="English" />
+            </ComboBox>-->
+            <ComboBox x:Name="LanguageComboBox" MinWidth="200">
                 <ComboBoxItem Content="한국어" />
                 <ComboBoxItem Content="English" />
             </ComboBox>

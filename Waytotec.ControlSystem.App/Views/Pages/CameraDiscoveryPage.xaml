@@ -663,7 +663,7 @@
                     BorderBrush="AntiqueWhite"
                     BorderThickness="2"
                     CornerRadius="10">
-                    <controls:RtspVideoViewer
+                    <controls:MediaFoundationRtspViewer
                         x:Name="RtspViewer"
                         Background="Transparent"
                         MouseDoubleClick="RtspViewer_MouseDoubleClick" />

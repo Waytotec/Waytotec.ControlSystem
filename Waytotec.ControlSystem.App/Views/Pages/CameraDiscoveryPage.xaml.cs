@@ -31,9 +31,9 @@ namespace Waytotec.ControlSystem.App.Views.Pages
             ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         }
 
-        private void HandleUnloaded(object sender, RoutedEventArgs e)
+        private async void HandleUnloaded(object sender, RoutedEventArgs e)
         {
-            RtspViewer.Stop();
+            await RtspViewer.StopAsync();
             Unloaded -= HandleUnloaded;
         }
         // <summary>
@@ -430,6 +430,7 @@ namespace Waytotec.ControlSystem.App.Views.Pages
         private void RtspViewer_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // 현재 선택된 카메라의 IP 가져오기
+            // rtsp://210.99.70.120:1935/live/cctv001.stream
             string ip = "192.168.1.120"; // 기본값
             string stream = "live1.sdp";
 
